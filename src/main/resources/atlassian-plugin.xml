@@ -52,7 +52,8 @@
         <label key="oauth2-bridge-config-item-webwork.label"/>
         <link linkId="oauth2-bridge-config-item-link-webwork">/secure/Oauth2BridgeConfig.jspa</link>
     </web-item>
-    <webwork1 key="oauth2-bridge-webwork1" name="Oauth2 Bridge" class="com.bes.jira.plugins.oauth2bridge.action.Oauth2BridgeConfigAction">
+
+    <webwork1 key="oauth2-bridge-webwork1" name="Oauth2 Bridge" class="java.lang.Object">
         <actions>
             <action name="com.bes.jira.plugins.oauth2bridge.action.Oauth2BridgeConfigAction" alias="Oauth2BridgeConfig">
                 <view name="input">/templates/Oauth2BridgeConfigAction.vm</view>

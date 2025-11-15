@@ -1,3 +1,9 @@
+<html>
+<head>
+    <title>Oauth2Bridge Config</title>
+</head>
+<body>
+<h1>Oauth2Bridge 配置</h1>
 <form action="$req.contextPath/secure/Oauth2BridgeConfig.jspa" method="post">
     <label>
         Client ID:
@@ -30,3 +36,6 @@
 #if($action.getMessage())
 <p style="color:green;">$action.getMessage()</p>
 #end
+
+</body>
+</html>
