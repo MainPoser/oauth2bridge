@@ -50,10 +50,10 @@
               weight="10">
         <description>Link to oauth2-bridge-config-webwork page.</description>
         <label key="oauth2-bridge-config-item-webwork.label"/>
-        <link linkId="oauth2-bridge-config-item-link-webwork">/secure/Oauth2BridgeConfig.jspa</link>
+        <link linkId="oauth2-bridge-config-item-link-webwork">/secure/Oauth2BridgeConfig!default.jspa</link>
     </web-item>
 
-    <webwork1 key="oauth2-bridge-webwork1" name="Oauth2 Bridge" class="java.lang.Object">
+    <webwork1 key="oauth2-bridge-webwork1" name="Oauth2 Bridge">
         <actions>
             <action name="com.bes.jira.plugins.oauth2bridge.action.Oauth2BridgeConfigAction" alias="Oauth2BridgeConfig">
                 <view name="input">/templates/Oauth2BridgeConfigAction.vm</view>

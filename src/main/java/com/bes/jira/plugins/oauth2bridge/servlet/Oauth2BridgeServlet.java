@@ -1,6 +1,7 @@
 package com.bes.jira.plugins.oauth2bridge.servlet;
 
 import com.atlassian.sal.api.auth.LoginUriProvider;
+import com.atlassian.sal.api.user.UserKey;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.atlassian.templaterenderer.TemplateRenderer;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Named
 public class Oauth2BridgeServlet extends HttpServlet {
@@ -46,8 +48,8 @@ public class Oauth2BridgeServlet extends HttpServlet {
     // ----------------------------------------------------
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String username = userManager.getRemoteUsername(req);
-        if (username == null || !userManager.isSystemAdmin(username)) {
+        UserKey userKey = Objects.requireNonNull(userManager.getRemoteUser(req)).getUserKey();
+        if (userKey == null || !userManager.isSystemAdmin(userKey)) {
             redirectToLogin(req, resp);
             return;
         }
@@ -63,11 +65,11 @@ public class Oauth2BridgeServlet extends HttpServlet {
                 clientId, mask(clientSecret), authorizationEndpoint, tokenEndpoint, userInfoEndpoint);
         // 2. 准备 context
         Map<String, Object> context = new HashMap<>();
-        context.put("clientId", clientId);
-        context.put("clientSecret", clientSecret);
-        context.put("authorizationEndpoint", authorizationEndpoint);
-        context.put("tokenEndpoint", tokenEndpoint);
-        context.put("userInfoEndpoint", userInfoEndpoint);
+        context.put(Oauth2BridgeConfigService.KEY_CLIENT_ID, clientId);
+        context.put(Oauth2BridgeConfigService.KEY_CLIENT_SECRET, clientSecret);
+        context.put(Oauth2BridgeConfigService.KEY_AUTHORIZATION_ENDPOINT, authorizationEndpoint);
+        context.put(Oauth2BridgeConfigService.KEY_TOKEN_ENDPOINT, tokenEndpoint);
+        context.put(Oauth2BridgeConfigService.KEY_USERINFO_ENDPOINT, userInfoEndpoint);
         // 用于 Velocity 模板生成 POST 目标 URL
         context.put("actionUrl", req.getContextPath() + req.getServletPath());
 
@@ -81,11 +83,11 @@ public class Oauth2BridgeServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         // 1. 获取表单值 (Servlet 方式)
-        String clientId = req.getParameter("clientId");
-        String clientSecret = req.getParameter("clientSecret");
-        String authorizationEndpoint = req.getParameter("authorizationEndpoint");
-        String tokenEndpoint = req.getParameter("tokenEndpoint");
-        String userInfoEndpoint = req.getParameter("userInfoEndpoint");
+        String clientId = req.getParameter(Oauth2BridgeConfigService.KEY_CLIENT_ID);
+        String clientSecret = req.getParameter(Oauth2BridgeConfigService.KEY_CLIENT_SECRET);
+        String authorizationEndpoint = req.getParameter(Oauth2BridgeConfigService.KEY_AUTHORIZATION_ENDPOINT);
+        String tokenEndpoint = req.getParameter(Oauth2BridgeConfigService.KEY_TOKEN_ENDPOINT);
+        String userInfoEndpoint = req.getParameter(Oauth2BridgeConfigService.KEY_USERINFO_ENDPOINT);
 
         log.info("Saving config: clientId={}, clientSecret={}, authEndpoint={}, tokenEndpoint={}, userInfoEndpoint={}",
                 clientId, mask(clientSecret), authorizationEndpoint, tokenEndpoint, userInfoEndpoint);
