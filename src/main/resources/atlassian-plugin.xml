@@ -1,0 +1,63 @@
+<atlassian-plugin key="${atlassian.plugin.key}" name="${project.name}" plugins-version="2">
+    <plugin-info>
+        <description>${project.description}</description>
+        <version>${project.version}</version>
+        <vendor name="${project.organization.name}" url="${project.organization.url}"/>
+        <param name="plugin-icon">images/pluginIcon.png</param>
+        <param name="plugin-logo">images/pluginLogo.png</param>
+    </plugin-info>
+
+    <!-- add our i18n resource -->
+    <resource type="i18n" name="i18n" location="oauth2bridge"/>
+
+    <!-- add our web resources -->
+    <web-resource key="oauth2bridge-resources" name="oauth2bridge Web Resources">
+        <dependency>com.atlassian.auiplugin:ajs</dependency>
+
+        <resource type="download" name="oauth2bridge.css" location="/css/oauth2bridge.css"/>
+        <resource type="download" name="oauth2bridge.js" location="/js/oauth2bridge.js"/>
+        <resource type="download" name="images/" location="/images"/>
+
+        <context>oauth2bridge</context>
+    </web-resource>
+    <rest name="Oauth2 Bridge Api" key="oauth2-bridge-api" i18n-name-key="oauth2-bridge-api.name" path="/oauth2bridge"
+          version="1.0">
+        <description key="oauth2-bridge-api.description">api接口</description>
+    </rest>
+    <servlet key="Oauth2BridgeServlet" class="com.bes.jira.plugins.oauth2bridge.servlet.Oauth2BridgeServlet">
+        <url-pattern>/oauth2-bridge/admin</url-pattern>
+    </servlet>
+    <web-section key="oauth2-bridge-section"
+                 name="Oauth2Bridge"
+                 location="system.admin"
+                 weight="110">
+        <description>The Oauth2Bridge section in the Admin menu</description>
+        <label key="oauth2-bridge-section.label"/>
+    </web-section>
+    <web-item key="oauth2-bridge-config-item"
+              name="Oauth2 Bridge Config"
+              i18n-name-key="oauth2-bridge-config-item.name"
+              section="system.admin/oauth2-bridge-section"
+              weight="10">
+        <description>Link to oauth2-bridge-config page.</description>
+        <label key="oauth2-bridge-config-item.label"/>
+        <link linkId="oauth2-bridge-config-item-link">/plugins/servlet/oauth2-bridge/admin</link>
+    </web-item>
+    <web-item key="oauth2-bridge-config-item-webwork"
+              name="Oauth2 Bridge Config Webwork"
+              i18n-name-key="oauth2-bridge-config-item-webwork.name"
+              section="system.admin/oauth2-bridge-section"
+              weight="10">
+        <description>Link to oauth2-bridge-config-webwork page.</description>
+        <label key="oauth2-bridge-config-item-webwork.label"/>
+        <link linkId="oauth2-bridge-config-item-link-webwork">/secure/Oauth2BridgeConfig.jspa</link>
+    </web-item>
+    <webwork1 key="oauth2-bridge-webwork1" name="Oauth2 Bridge" class="com.bes.jira.plugins.oauth2bridge.action.Oauth2BridgeConfigAction">
+        <actions>
+            <action name="com.bes.jira.plugins.oauth2bridge.action.Oauth2BridgeConfigAction" alias="Oauth2BridgeConfig">
+                <view name="input">/templates/Oauth2BridgeConfigAction.vm</view>
+                <view name="success">/templates/Oauth2BridgeConfigAction.vm</view>
+            </action>
+        </actions>
+    </webwork1>
+</atlassian-plugin>
