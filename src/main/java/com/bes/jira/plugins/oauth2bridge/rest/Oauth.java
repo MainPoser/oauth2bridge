@@ -1,7 +1,5 @@
 package com.bes.jira.plugins.oauth2bridge.rest;
 
-import com.atlassian.jira.user.ApplicationUser;
-import com.atlassian.jira.user.util.UserManager;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.atlassian.plugins.rest.common.security.AnonymousAllowed;
 import com.atlassian.sal.api.ApplicationProperties;
@@ -32,16 +30,13 @@ import java.util.Map;
 public class Oauth {
     @ComponentImport
     private final ApplicationProperties applicationProperties;
-    @ComponentImport
-    private final UserManager userManager;
     private final StateCache stateCache;
 
     // 使用 @Inject 注入依赖项
     @Inject
-    public Oauth(final ApplicationProperties applicationProperties, StateCache stateCache, UserManager userManager) {
+    public Oauth(final ApplicationProperties applicationProperties, StateCache stateCache) {
         this.applicationProperties = applicationProperties;
         this.stateCache = stateCache;
-        this.userManager = userManager;
     }
 
     /**
@@ -108,10 +103,10 @@ public class Oauth {
             String username = fetchUsername(accessToken);
 
             // 3️⃣ 找到 Jira 用户
-            ApplicationUser jiraUser = userManager.getUserByName(username);
-            if (jiraUser == null) {
-                return Response.status(401).entity("No matching Jira user").build();
-            }
+//            ApplicationUser jiraUser = userManager.getUserByName(username);
+//            if (jiraUser == null) {
+//                return Response.status(401).entity("No matching Jira user").build();
+//            }
 
             // 4️⃣ 自动登录
             // LoginManager loginManager = ComponentAccessor.getComponent(DefaultAuthenticator.class);

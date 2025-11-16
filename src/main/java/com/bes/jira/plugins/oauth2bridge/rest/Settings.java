@@ -46,8 +46,7 @@ public class Settings {
 
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response put() {
-        Map<String, String> context = new HashMap<>();
+    public Response put(Map<String, String> context) {
         String clientId = context.get(Oauth2BridgeConfigService.KEY_CLIENT_ID);
         String clientSecret = context.get(Oauth2BridgeConfigService.KEY_CLIENT_SECRET);
         String authorizationEndpoint = context.get(Oauth2BridgeConfigService.KEY_AUTHORIZATION_ENDPOINT);
