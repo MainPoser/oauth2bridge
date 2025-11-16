@@ -28,17 +28,23 @@
         <url-pattern>/oauth2bridge</url-pattern>
         <description>The oauth2bridge servlet</description>
     </servlet>
+    <web-item key="oauth2-bridge-menu"
+              name="oauth2bridge Menu"
+              section="system.top.navigation.bar"
+              weight="10">
+        <description>Link to oauth2-bridge page.</description>
+        <label key="oauth2-bridge-menu.label"/>
+        <link linkId="oauth2-bridge-menu"/>
+    </web-item>
     <web-section key="oauth2-bridge-section"
                  name="oauth2bridge Section"
-                 location="system.admin"
+                 location="oauth2-bridge-menu"
                  weight="110">
-        <description>The oauth2bridge section</description>
-        <label key="oauth2-bridge-section.label"/>
     </web-section>
     <web-item key="oauth2-bridge-setting-item"
               name="oauth2bridge Setting"
               i18n-name-key="oauth2-bridge-setting-item.name"
-              section="system.admin/oauth2-bridge-section"
+              section="oauth2-bridge-menu/oauth2-bridge-section"
               weight="10">
         <description>Link to oauth2-bridge-setting page.</description>
         <label key="oauth2-bridge-setting-item.label"/>
@@ -47,7 +53,7 @@
     <web-item key="oauth2-bridge-setting-item-webwork"
               name="oauth2bridge Setting(Webwork)"
               i18n-name-key="oauth2-bridge-setting-item-webwork.name"
-              section="system.admin/oauth2-bridge-section"
+              section="oauth2-bridge-menu/oauth2-bridge-section"
               weight="10">
         <description>Link to oauth2-bridge-setting-webwork page.</description>
         <label key="oauth2-bridge-setting-item-webwork.label"/>
