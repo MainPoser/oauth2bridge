@@ -1,25 +1,25 @@
 package com.bes.jira.plugins.oauth2bridge.servlet;
 
+import com.atlassian.plugin.webresource.UrlMode;
+import com.atlassian.plugin.webresource.WebResourceManager;
 import com.atlassian.sal.api.auth.LoginUriProvider;
-import com.atlassian.sal.api.user.UserKey;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.bes.jira.plugins.oauth2bridge.service.Oauth2BridgeConfigService;
+import com.bes.jira.plugins.oauth2bridge.util.RawHtml;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URI;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 @Named
 public class Oauth2BridgeServlet extends HttpServlet {
@@ -30,102 +30,37 @@ public class Oauth2BridgeServlet extends HttpServlet {
     private final LoginUriProvider loginUriProvider;
     @ComponentImport // 注入 Atlassian 提供的服务
     private final TemplateRenderer renderer;
-    private final Oauth2BridgeConfigService configService;
+    @ComponentImport
+    private final WebResourceManager webResourceManager;
 
     // 构造函数注入依赖
     @Inject
     public Oauth2BridgeServlet(
-            UserManager userManager, LoginUriProvider loginUriProvider, TemplateRenderer renderer,
-            Oauth2BridgeConfigService configService) {
+            UserManager userManager, LoginUriProvider loginUriProvider, TemplateRenderer renderer, WebResourceManager webResourceManager) {
         this.userManager = userManager;
         this.loginUriProvider = loginUriProvider;
         this.renderer = renderer;
-        this.configService = configService;
+        this.webResourceManager = webResourceManager;
     }
 
     // ----------------------------------------------------
     // GET 请求 (页面显示)
     // ----------------------------------------------------
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        UserKey userKey = Objects.requireNonNull(userManager.getRemoteUser(req)).getUserKey();
-        if (userKey == null || !userManager.isSystemAdmin(userKey)) {
-            redirectToLogin(req, resp);
-            return;
-        }
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setContentType("text/html;charset=UTF-8");
+        // 加载 Jira 自带样式（必需）
+//        webResourceManager.requireResourcesForContext("atl.admin");
+        webResourceManager.requireResourcesForContext("oauth2bridge");
 
-        // 1. 读取配置
-        String clientId = configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_ID);
-        String clientSecret = configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_SECRET);
-        String authorizationEndpoint = configService.getConfig(Oauth2BridgeConfigService.KEY_AUTHORIZATION_ENDPOINT);
-        String tokenEndpoint = configService.getConfig(Oauth2BridgeConfigService.KEY_TOKEN_ENDPOINT);
-        String userInfoEndpoint = configService.getConfig(Oauth2BridgeConfigService.KEY_USERINFO_ENDPOINT);
-        log.info("Loaded config: clientId={}, clientSecret={}, authEndpoint={}, tokenEndpoint={}, userInfoEndpoint={}",
-                clientId, mask(clientSecret), authorizationEndpoint, tokenEndpoint, userInfoEndpoint);
-        // 2. 准备 context
+        // 2. 获取资源 HTML（link/script 标签）
+        StringWriter sw = new StringWriter();
+        webResourceManager.includeResources(sw, UrlMode.RELATIVE);   // ⭐将资源标签写入字符串
+
         Map<String, Object> context = new HashMap<>();
-        context.put(Oauth2BridgeConfigService.KEY_CLIENT_ID, clientId);
-        context.put(Oauth2BridgeConfigService.KEY_CLIENT_SECRET, clientSecret);
-        context.put(Oauth2BridgeConfigService.KEY_AUTHORIZATION_ENDPOINT, authorizationEndpoint);
-        context.put(Oauth2BridgeConfigService.KEY_TOKEN_ENDPOINT, tokenEndpoint);
-        context.put(Oauth2BridgeConfigService.KEY_USERINFO_ENDPOINT, userInfoEndpoint);
-        // 用于 Velocity 模板生成 POST 目标 URL
-        context.put("actionUrl", req.getContextPath() + req.getServletPath());
+        context.put("resources", new RawHtml((sw.toString())));         // ⭐传给 VM
 
-        // 3. 渲染模板
-        renderer.render("templates/oauth2-bridge-config.vm", context, resp.getWriter());
-    }
-
-    // ----------------------------------------------------
-    // POST 请求 (表单提交)
-    // ----------------------------------------------------
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // 1. 获取表单值 (Servlet 方式)
-        String clientId = req.getParameter(Oauth2BridgeConfigService.KEY_CLIENT_ID);
-        String clientSecret = req.getParameter(Oauth2BridgeConfigService.KEY_CLIENT_SECRET);
-        String authorizationEndpoint = req.getParameter(Oauth2BridgeConfigService.KEY_AUTHORIZATION_ENDPOINT);
-        String tokenEndpoint = req.getParameter(Oauth2BridgeConfigService.KEY_TOKEN_ENDPOINT);
-        String userInfoEndpoint = req.getParameter(Oauth2BridgeConfigService.KEY_USERINFO_ENDPOINT);
-
-        log.info("Saving config: clientId={}, clientSecret={}, authEndpoint={}, tokenEndpoint={}, userInfoEndpoint={}",
-                clientId, mask(clientSecret), authorizationEndpoint, tokenEndpoint, userInfoEndpoint);
-
-        // 2. 校验和保存
-        if (clientId == null || clientId.trim().isEmpty()) {
-            // 简单错误处理：可以重新调用 doGet 渲染页面并添加错误信息
-            // 复杂的错误处理推荐使用 XWork Action
-            resp.sendRedirect(req.getContextPath() + req.getServletPath() + "?error=true");
-            return;
-        }
-
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_CLIENT_ID, clientId.trim());
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_CLIENT_SECRET, clientSecret.trim());
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_AUTHORIZATION_ENDPOINT, authorizationEndpoint.trim());
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_TOKEN_ENDPOINT, tokenEndpoint.trim());
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_USERINFO_ENDPOINT, userInfoEndpoint.trim());
-
-        // 3. 重定向到自身，显示成功信息
-        resp.sendRedirect(req.getContextPath() + req.getServletPath() + "?success=true");
-    }
-
-    private void redirectToLogin(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        response.sendRedirect(loginUriProvider.getLoginUri(getUri(request)).toASCIIString());
-    }
-
-    private URI getUri(HttpServletRequest request) {
-        StringBuffer builder = request.getRequestURL();
-        if (request.getQueryString() != null) {
-            builder.append("?");
-            builder.append(request.getQueryString());
-        }
-        return URI.create(builder.toString());
-    }
-
-    // 遮掩敏感信息
-    private String mask(String s) {
-        if (s == null || s.length() <= 4) return "****";
-        return s.substring(0, 2) + "****" + s.substring(s.length() - 2);
+        // 渲染模板
+        renderer.render("templates/oauth2-bridge.vm", context, resp.getWriter());
     }
 }

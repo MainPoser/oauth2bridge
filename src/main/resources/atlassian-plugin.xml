@@ -20,44 +20,45 @@
 
         <context>oauth2bridge</context>
     </web-resource>
-    <rest name="Oauth2 Bridge Api" key="oauth2-bridge-api" i18n-name-key="oauth2-bridge-api.name" path="/oauth2bridge"
-          version="1.0">
-        <description key="oauth2-bridge-api.description">api接口</description>
+    <rest name="oauth2bridge Api" key="oauth2-bridge-api" i18n-name-key="oauth2-bridge-api.name" path="/oauth2bridge" version="1.0">
+        <description>The oauth2bridge rest api</description>
     </rest>
-    <servlet key="Oauth2BridgeServlet" class="com.bes.jira.plugins.oauth2bridge.servlet.Oauth2BridgeServlet">
-        <url-pattern>/oauth2-bridge/admin</url-pattern>
+    <servlet name="oauth2bridge Servlet" key="oauth2-bridge-servlet"
+             class="com.bes.jira.plugins.oauth2bridge.servlet.Oauth2BridgeServlet">
+        <url-pattern>/oauth2bridge</url-pattern>
+        <description>The oauth2bridge servlet</description>
     </servlet>
     <web-section key="oauth2-bridge-section"
-                 name="Oauth2Bridge"
+                 name="oauth2bridge Section"
                  location="system.admin"
                  weight="110">
-        <description>The Oauth2Bridge section in the Admin menu</description>
+        <description>The oauth2bridge section</description>
         <label key="oauth2-bridge-section.label"/>
     </web-section>
-    <web-item key="oauth2-bridge-config-item"
-              name="Oauth2 Bridge Config"
-              i18n-name-key="oauth2-bridge-config-item.name"
+    <web-item key="oauth2-bridge-setting-item"
+              name="oauth2bridge Setting"
+              i18n-name-key="oauth2-bridge-setting-item.name"
               section="system.admin/oauth2-bridge-section"
               weight="10">
-        <description>Link to oauth2-bridge-config page.</description>
-        <label key="oauth2-bridge-config-item.label"/>
-        <link linkId="oauth2-bridge-config-item-link">/plugins/servlet/oauth2-bridge/admin</link>
+        <description>Link to oauth2-bridge-setting page.</description>
+        <label key="oauth2-bridge-setting-item.label"/>
+        <link linkId="oauth2-bridge-setting-item-link">/plugins/servlet/oauth2bridge</link>
     </web-item>
-    <web-item key="oauth2-bridge-config-item-webwork"
-              name="Oauth2 Bridge Config Webwork"
-              i18n-name-key="oauth2-bridge-config-item-webwork.name"
+    <web-item key="oauth2-bridge-setting-item-webwork"
+              name="oauth2bridge Setting(Webwork)"
+              i18n-name-key="oauth2-bridge-setting-item-webwork.name"
               section="system.admin/oauth2-bridge-section"
               weight="10">
-        <description>Link to oauth2-bridge-config-webwork page.</description>
-        <label key="oauth2-bridge-config-item-webwork.label"/>
-        <link linkId="oauth2-bridge-config-item-link-webwork">/secure/Oauth2BridgeConfig!default.jspa</link>
+        <description>Link to oauth2-bridge-setting-webwork page.</description>
+        <label key="oauth2-bridge-setting-item-webwork.label"/>
+        <link linkId="oauth2-bridge-setting-item-link-webwork">/secure/Oauth2BridgeSetting!default.jspa</link>
     </web-item>
 
-    <webwork1 key="oauth2-bridge-webwork1" name="Oauth2 Bridge">
+    <webwork1 key="oauth2-bridge-webwork1" name="oauth2bridge Setting(WebWork)">
         <actions>
-            <action name="com.bes.jira.plugins.oauth2bridge.action.Oauth2BridgeConfigAction" alias="Oauth2BridgeConfig">
-                <view name="input">/templates/Oauth2BridgeConfigAction.vm</view>
-                <view name="success">/templates/Oauth2BridgeConfigAction.vm</view>
+            <action name="com.bes.jira.plugins.oauth2bridge.action.Oauth2BridgeSettingAction" alias="Oauth2BridgeSetting">
+                <view name="input">/templates/Oauth2BridgeSettingAction.vm</view>
+                <view name="success">/templates/Oauth2BridgeSettingAction.vm</view>
             </action>
         </actions>
     </webwork1>

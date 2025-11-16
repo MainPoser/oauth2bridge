@@ -1,0 +1,52 @@
+<html>
+<head>
+    <title>My Plugin Configuration</title>
+    ## 静态资源占位符，后面由 Servlet 写入
+    $resources
+</head>
+<body class="aui-page-hybrid">
+    <div id="page">
+        <header id="header" role="banner"></header>
+        <div id="content" class="page-content">
+            <div class="aui-page-header">
+                <div class="aui-page-header-main">
+                    <h2>My Plugin Configuration</h2>
+                </div>
+            </div>
+
+            <div id="message-container"></div>
+
+            <form class="aui">
+                <div class="field-group">
+                    <label for="client-id">客户端id</label>
+                    <input class="text medium-field" type="text" id="client-id" name="clientId" value="">
+                    <div class="description">Enter clientId for the plugin.</div>
+                </div>
+                <div class="field-group">
+                    <label for="client-secret">客户端secret</label>
+                    <input class="text medium-field" type="text" id="client-secret" name="clientSecret" value="">
+                    <div class="description">Enter clientSecret for the plugin.</div>
+                </div>
+                <div class="field-group">
+                    <label for="authorization-endpoint">认证地址</label>
+                    <input class="text medium-field" type="text" id="authorization-endpoint" name="authorizationEndpoint" value="">
+                    <div class="description">Enter authorizationEndpoint for the plugin.</div>
+                </div>
+                <div class="field-group">
+                    <label for="token-endpoint">token地址</label>
+                    <input class="text medium-field" type="text" id="token-endpoint" name="tokenEndpoint" value="">
+                    <div class="description">Enter tokenEndpoint for the plugin.</div>
+                </div>
+                <div class="field-group">
+                    <label for="userInfo-endpoint">userInfo地址</label>
+                    <input class="text medium-field" type="text" id="userInfo-endpoint" name="userInfoEndpoint" value="">
+                    <div class="description">Enter userInfoEndpoint for the plugin.</div>
+                </div>
+                <div class="buttons">
+                    <input id="save-button" class="aui-button aui-button-primary" type="button" value="保存配置">
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
