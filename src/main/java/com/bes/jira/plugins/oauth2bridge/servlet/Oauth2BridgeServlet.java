@@ -1,7 +1,5 @@
 package com.bes.jira.plugins.oauth2bridge.servlet;
 
-import com.atlassian.sal.api.auth.LoginUriProvider;
-import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import org.slf4j.Logger;
@@ -17,19 +15,12 @@ import java.io.IOException;
 @Named
 public class Oauth2BridgeServlet extends HttpServlet {
     private static final Logger log = LoggerFactory.getLogger(Oauth2BridgeServlet.class);
-    @ComponentImport
-    private final UserManager userManager;
-    @ComponentImport
-    private final LoginUriProvider loginUriProvider;
     @ComponentImport // 注入 Atlassian 提供的服务
     private final TemplateRenderer renderer;
 
     // 构造函数注入依赖
     @Inject
-    public Oauth2BridgeServlet(
-            UserManager userManager, LoginUriProvider loginUriProvider, TemplateRenderer renderer) {
-        this.userManager = userManager;
-        this.loginUriProvider = loginUriProvider;
+    public Oauth2BridgeServlet(TemplateRenderer renderer) {
         this.renderer = renderer;
     }
 

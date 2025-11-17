@@ -1,5 +1,9 @@
 package com.bes.jira.plugins.oauth2bridge.store;
 
+import com.bes.jira.plugins.oauth2bridge.servlet.filter.Oauth2BridgeServletFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -18,6 +22,7 @@ import java.util.function.Predicate;
  * @param <V> 值类型 (通常是用户 ID 或重定向 URL)
  */
 public class StateTtlCache<K, V> {
+    private static final Logger log = LoggerFactory.getLogger(StateTtlCache.class);
 
     // 内部类：缓存项，存储实际的值和过期时间
     private static class CacheEntry<V> {
@@ -64,7 +69,7 @@ public class StateTtlCache<K, V> {
                 cleanupIntervalSeconds,
                 TimeUnit.SECONDS
         );
-        System.out.println("State Cache 自动清理服务已启动，间隔: " + cleanupIntervalSeconds + "s");
+        log.info("State Cache Auto Clean Started，Interval: {}s.", cleanupIntervalSeconds);
     }
 
     /**
@@ -122,17 +127,18 @@ public class StateTtlCache<K, V> {
             return;
         }
 
-        // Java 8 之后，Map 接口支持 removeIf，但 ConcurrentHashMap 没有直接实现这个方法。
-        // 我们使用 entrySet().removeIf()，它在 ConcurrentHashMap 中是线程安全的。
         Predicate<Map.Entry<K, CacheEntry<V>>> isExpired = entry -> entry.getValue().isExpired();
 
         int sizeBefore = cacheMap.size();
 
         // removeIf 遍历并移除所有满足条件的 Entry
-        cacheMap.entrySet().removeIf(isExpired);
+        // Java 8 之后，Map 接口支持 removeIf，但 ConcurrentHashMap 没有直接实现这个方法。
+        // 我们使用 entrySet().removeIf()，它在 ConcurrentHashMap 中是线程安全的。
+        cacheMap.entrySet().removeIf(entry -> entry.getValue().isExpired());
 
         int cleanedCount = sizeBefore - cacheMap.size();
         if (cleanedCount > 0) {
+            log.info("State Cache Clean {} Expired Entry.", cleanedCount);
             // 在实际 JIRA 插件中，使用 JIRA 的日志系统代替 System.out.println
             // System.out.println("State Cache 后台清理了 " + cleanedCount + " 个过期项。");
         }
@@ -148,7 +154,7 @@ public class StateTtlCache<K, V> {
             // 在实际插件中，最好加上 try-catch 块处理 InterruptedException
             try {
                 if (!cleanupScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                    System.err.println("State Cache 清理线程未在 5 秒内终止。");
+                    log.info("State Cache Clean Thread Not Termination in 5 sec.");
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt(); // 重新设置中断状态

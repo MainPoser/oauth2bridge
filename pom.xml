@@ -1,28 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.bes.jira.plugins</groupId>
     <artifactId>oauth2bridge</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-
     <organization>
         <name>Example Company</name>
         <url>http://www.example.com/</url>
     </organization>
-
     <name>oauth2bridge</name>
     <description>This is the com.bes.jira.plugins:oauth2bridge plugin for Atlassian JIRA.</description>
     <packaging>atlassian-plugin</packaging>
-
     <dependencies>
         <dependency>
             <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>4.0.1</version>
+            <artifactId>servlet-api</artifactId>
+            <version>2.4</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -37,7 +31,6 @@
             <version>6.1.7</version>
             <scope>provided</scope>
         </dependency>
-
         <dependency>
             <groupId>com.atlassian.jira</groupId>
             <artifactId>jira-api</artifactId>
@@ -60,7 +53,6 @@
                     <version>4.10</version>
                     <scope>test</scope>
                 </dependency>-->
-
         <dependency>
             <groupId>com.atlassian.plugin</groupId>
             <artifactId>atlassian-spring-scanner-annotation</artifactId>
@@ -73,7 +65,6 @@
             <version>1</version>
             <scope>provided</scope>
         </dependency>
-
         <!-- WIRED TEST RUNNER DEPENDENCIES -->
         <!--        <dependency>
                     <groupId>com.atlassian.plugins</groupId>
@@ -87,7 +78,6 @@
             <version>1.1.1</version>
             <scope>provided</scope>
         </dependency>
-
         <!-- Uncomment to use TestKit in your project. Details at https://bitbucket.org/atlassian/jira-testkit -->
         <!-- You can read more about TestKit at https://developer.atlassian.com/display/JIRADEV/Plugin+Tutorial+-+Smarter+integration+testing+with+TestKit -->
         <!--
@@ -121,28 +111,17 @@
                     </pluginArtifacts>
                     -->
                     <enableQuickReload>true</enableQuickReload>
-
                     <!-- See here for an explanation of default instructions: -->
                     <!-- https://developer.atlassian.com/docs/advanced-topics/configuration-of-instructions-in-atlassian-plugins -->
                     <instructions>
                         <Atlassian-Plugin-Key>${atlassian.plugin.key}</Atlassian-Plugin-Key>
-
                         <!-- Add package to export here -->
-                        <Export-Package>
-                            com.bes.jira.plugins.oauth2bridge.api,
-                        </Export-Package>
-
+                        <Export-Package>com.bes.jira.plugins.oauth2bridge.api,</Export-Package>
                         <!-- Add package import here -->
-                        <Import-Package>
-                            org.springframework.osgi.*;resolution:="optional",
-                            org.eclipse.gemini.blueprint.*;resolution:="optional",
-                            *
-                        </Import-Package>
-
+                        <Import-Package>org.springframework.osgi.*;resolution:="optional", org.eclipse.gemini.blueprint.*;resolution:="optional", *</Import-Package>
                         <!-- Ensure plugin is spring powered -->
                         <Spring-Context>*</Spring-Context>
                     </instructions>
-
                 </configuration>
             </plugin>
             <plugin>
@@ -163,7 +142,6 @@
             </plugin>
         </plugins>
     </build>
-
     <properties>
         <jira.version>8.14.1</jira.version>
         <amps.version>9.1.1</amps.version>
@@ -177,5 +155,4 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
-
 </project>

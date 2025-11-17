@@ -6,12 +6,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 
+@Named
 public class Oauth2BridgeSettingAction extends JiraWebActionSupport {
 
     private static final Logger log = LoggerFactory.getLogger(Oauth2BridgeSettingAction.class);
 
-    private Oauth2BridgeConfigService configService;
+    private final Oauth2BridgeConfigService configService;
 
     private String clientId;
     private String clientSecret;
@@ -19,14 +21,8 @@ public class Oauth2BridgeSettingAction extends JiraWebActionSupport {
     private String tokenEndpoint;
     private String userInfoEndpoint;
 
-    public Oauth2BridgeSettingAction() {
-        // 必须保留无参构造器供 Webwork1 初始化。不能使用@Inject注入有参构造器
-        log.info("Used Cont");
-    }
-
     @Inject
-    public void setConfigService(Oauth2BridgeConfigService configService) {
-        log.info("Set ConfigService");
+    public Oauth2BridgeSettingAction(Oauth2BridgeConfigService configService) {
         this.configService = configService;
     }
 

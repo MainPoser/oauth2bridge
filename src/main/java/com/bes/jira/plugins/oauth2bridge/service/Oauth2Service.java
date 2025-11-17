@@ -6,15 +6,18 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import javax.inject.Named;
+import javax.ws.rs.core.MultivaluedMap;
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 @Named
 public class Oauth2Service {
@@ -29,39 +32,72 @@ public class Oauth2Service {
     /**
      * 构建授权 URL
      */
-    public String buildAuthorizationUrl(String state, String scope, String redirectUri) {
-        try {
-            StringBuilder sb = new StringBuilder();
-            sb.append(configService.getConfig(Oauth2BridgeConfigService.KEY_AUTHORIZATION_ENDPOINT)).append("?")
-                    .append("response_type=code")
-                    .append("&client_id=").append(URLEncoder.encode(configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_ID), "UTF-8"))
-                    .append("&client_secret=").append(URLEncoder.encode(configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_SECRET), "UTF-8"))
-                    .append("&redirect_uri=").append(URLEncoder.encode(redirectUri, "UTF-8"));
-            if (scope != null) {
-                sb.append("&scope=").append(URLEncoder.encode(scope, "UTF-8"));
+    public String buildAuthorizationUrl(MultivaluedMap<String, String> paramsForIdP) {
+        // 1. 获取授权端点基地址
+        String baseAuthorizationUrl = configService.getConfig(Oauth2BridgeConfigService.KEY_AUTHORIZATION_ENDPOINT);
+        if (baseAuthorizationUrl == null || baseAuthorizationUrl.isEmpty()) {
+            throw new IllegalStateException("OAuth 2.0 Authorization Endpoint is not configured.");
+        }
+
+        // 2. 确保包含 client_id (如果原始请求中没有)
+        if (!paramsForIdP.containsKey("client_id")) {
+            String clientId = configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_ID);
+            if (clientId != null) {
+                paramsForIdP.put("client_id", Collections.singletonList(clientId));
             }
-            if (state != null) {
-                sb.append("&state=").append(URLEncoder.encode(state, "UTF-8"));
+        }
+
+        // 3. 构建查询字符串
+        StringBuilder query = new StringBuilder();
+
+        for (Map.Entry<String, java.util.List<String>> entry : paramsForIdP.entrySet()) {
+            String key = entry.getKey();
+
+            // ⚠️ 安全检查：授权请求中绝不应包含 client_secret
+            if (key.equalsIgnoreCase("client_secret")) {
+                continue;
             }
 
-            return sb.toString();
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
+            for (String value : entry.getValue()) {
+                if (query.length() > 0) {
+                    query.append("&");
+                }
+
+                try {
+                    // 编码键和值
+                    query.append(URLEncoder.encode(key, StandardCharsets.UTF_8.toString()))
+                            .append("=")
+                            .append(URLEncoder.encode(value, StandardCharsets.UTF_8.toString()));
+                } catch (UnsupportedEncodingException e) {
+                    // 抛出 RuntimeException，因为 UTF-8 编码失败是致命错误
+                    throw new RuntimeException("Error encoding URL parameters for IdP.", e);
+                }
+            }
         }
+
+        // 4. 拼接基地址和查询字符串
+        String separator = baseAuthorizationUrl.contains("?") ? "&" : "?";
+
+        return baseAuthorizationUrl + separator + query;
     }
 
     /**
      * 使用 code 换 token（返回 JSON 字符串）
      */
-    public TokenResponse requestToken(String code) throws IOException {
+    public TokenResponse requestToken(MultivaluedMap<String, String> paramsForIdP) throws IOException {
         HttpClient httpClient = new HttpClient();
         PostMethod post = new PostMethod(configService.getConfig(Oauth2BridgeConfigService.KEY_TOKEN_ENDPOINT));
-        NameValuePair[] params = new NameValuePair[]{
-                new NameValuePair("grant_type", "authorization_code"),
-                new NameValuePair("code", code),
-                new NameValuePair("client_id", configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_ID)),
-                new NameValuePair("client_secret", configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_SECRET))
-        };
+        List<NameValuePair> nameValuePairs = new ArrayList<>();
+
+        // A. 遍历 paramsForIdP 中的所有参数
+        for (Map.Entry<String, List<String>> entry : paramsForIdP.entrySet()) {
+            String key = entry.getKey();
+            // MultivaluedMap 的值是 List，理论上在 OAuth token 交换中应为单值
+            for (String value : entry.getValue()) {
+                nameValuePairs.add(new NameValuePair(key, value));
+            }
+        }
+        post.setRequestBody(nameValuePairs.toArray(new NameValuePair[0]));
 
         try {
             httpClient.executeMethod(post);
@@ -82,7 +118,14 @@ public class Oauth2Service {
         get.setRequestHeader("Authorization", "Bearer " + accessToken);
 
         try {
-            client.executeMethod(get);
+            int status = client.executeMethod(get);
+            // ---- token 是否失效！ ----
+            if (status == 401 || status == 403) {
+                throw new InvalidParameterException("TOKEN_INVALID");
+            }
+            if (status != 200) {
+                throw new IOException("Userinfo returned HTTP status " + status);
+            }
             String body = get.getResponseBodyAsString();
             return mapper.readValue(body, UserInfo.class);
         } finally {

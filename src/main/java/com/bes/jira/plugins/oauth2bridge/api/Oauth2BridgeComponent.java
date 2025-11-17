@@ -1,5 +1,5 @@
 package com.bes.jira.plugins.oauth2bridge.api;
 
-public interface MyPluginComponent {
+public interface Oauth2BridgeComponent {
     String getName();
 }
