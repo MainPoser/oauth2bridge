@@ -1,13 +1,9 @@
 package com.bes.jira.plugins.oauth2bridge.servlet;
 
-import com.atlassian.plugin.webresource.UrlMode;
-import com.atlassian.plugin.webresource.WebResourceManager;
 import com.atlassian.sal.api.auth.LoginUriProvider;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.atlassian.templaterenderer.TemplateRenderer;
-import com.bes.jira.plugins.oauth2bridge.service.Oauth2BridgeConfigService;
-import com.bes.jira.plugins.oauth2bridge.util.RawHtml;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,9 +13,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.Map;
 
 @Named
 public class Oauth2BridgeServlet extends HttpServlet {
