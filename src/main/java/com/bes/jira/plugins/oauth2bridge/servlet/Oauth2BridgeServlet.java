@@ -30,17 +30,14 @@ public class Oauth2BridgeServlet extends HttpServlet {
     private final LoginUriProvider loginUriProvider;
     @ComponentImport // 注入 Atlassian 提供的服务
     private final TemplateRenderer renderer;
-    @ComponentImport
-    private final WebResourceManager webResourceManager;
 
     // 构造函数注入依赖
     @Inject
     public Oauth2BridgeServlet(
-            UserManager userManager, LoginUriProvider loginUriProvider, TemplateRenderer renderer, WebResourceManager webResourceManager) {
+            UserManager userManager, LoginUriProvider loginUriProvider, TemplateRenderer renderer) {
         this.userManager = userManager;
         this.loginUriProvider = loginUriProvider;
         this.renderer = renderer;
-        this.webResourceManager = webResourceManager;
     }
 
     // ----------------------------------------------------
@@ -49,19 +46,7 @@ public class Oauth2BridgeServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setContentType("text/html;charset=UTF-8");
-        // 加载 Jira 自带样式（必需）
-//        webResourceManager.requireResourcesForContext("atl.admin");
-//        webResourceManager.requireResourcesForContext("oauth2bridge");
-//
-//        // 2. 获取资源 HTML（link/script 标签）
-//        StringWriter sw = new StringWriter();
-//        webResourceManager.includeResources(sw, UrlMode.RELATIVE);   // ⭐将资源标签写入字符串
-
-        Map<String, Object> context = new HashMap<>();
-        context.put("req", req);         // ⭐传给 VM
-        context.put("res", resp);         // ⭐传给 VM
-
         // 渲染模板
-        renderer.render("templates/oauth2-bridge.vm", context, resp.getWriter());
+        renderer.render("templates/oauth2-bridge.vm", resp.getWriter());
     }
 }

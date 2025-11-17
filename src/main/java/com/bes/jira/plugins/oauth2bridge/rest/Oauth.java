@@ -2,8 +2,14 @@ package com.bes.jira.plugins.oauth2bridge.rest;
 
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.atlassian.plugins.rest.common.security.AnonymousAllowed;
+import com.atlassian.sal.api.auth.LoginUriProvider;
+import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.sal.api.ApplicationProperties;
 import com.atlassian.sal.api.UrlMode;
+import com.bes.jira.plugins.oauth2bridge.model.TokenResponse;
+import com.bes.jira.plugins.oauth2bridge.model.UserInfo;
+import com.bes.jira.plugins.oauth2bridge.service.Oauth2BridgeConfigService;
+import com.bes.jira.plugins.oauth2bridge.service.Oauth2Service;
 import com.bes.jira.plugins.oauth2bridge.store.StateCache;
 import com.bes.jira.plugins.oauth2bridge.util.OAuthStateGenerator;
 import com.bes.jira.plugins.oauth2bridge.util.Url;
@@ -30,12 +36,24 @@ import java.util.Map;
 public class Oauth {
     @ComponentImport
     private final ApplicationProperties applicationProperties;
+    @ComponentImport
+    private final UserManager userManager;
+    @ComponentImport
+    private final LoginUriProvider loginUriProvider;
+    private final Oauth2BridgeConfigService configService;
+    private final Oauth2Service oauth2Service;
     private final StateCache stateCache;
 
     // 使用 @Inject 注入依赖项
     @Inject
-    public Oauth(final ApplicationProperties applicationProperties, StateCache stateCache) {
+    public Oauth(final ApplicationProperties applicationProperties, UserManager userManager,
+                 LoginUriProvider loginUriProvider, Oauth2BridgeConfigService configService,
+                 Oauth2Service oauth2Service, StateCache stateCache) {
         this.applicationProperties = applicationProperties;
+        this.userManager = userManager;
+        this.loginUriProvider = loginUriProvider;
+        this.configService = configService;
+        this.oauth2Service = oauth2Service;
         this.stateCache = stateCache;
     }
 
@@ -50,11 +68,6 @@ public class Oauth {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Missing redirect_uri").build();
         }
-        // 获取当前的oauth2配置
-        String oauth2AccessTokenUrl = "http://localhost:8888/oauth/token";
-        String userAuthorizationUri = "//localhost:8888/oauth/authorize";
-        String oauth2ClientId = "jira";
-        String oauth2Scope = "";
         // todo 生成state，获取oauth2的登录地址并设置redirect_uri
         String oauth2State = OAuthStateGenerator.generateState();
         stateCache.storeState(oauth2State, redirectUri);
@@ -63,17 +76,8 @@ public class Oauth {
         Map<String, String> callbackQueryParams = new HashMap<>();
         callbackQueryParams.put("redirect_uri", redirectUri);
         callbackQueryParams.put("state", state);
-        System.out.println(redirectUri + "+" + state);
         String oauth2RedirectUrl = Url.buildQueryUrl(redirectBaseUrl, callbackQueryParams);
-
-        Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("response_type", "code");
-        queryParams.put("client_id", oauth2ClientId);
-        queryParams.put("redirect_uri", oauth2RedirectUrl);
-        queryParams.put("state", oauth2State);
-        queryParams.put("scope", oauth2Scope);
-        String oauth2LoginUrl = Url.buildQueryUrl(oauth2AccessTokenUrl, queryParams);
-        return Response.seeOther(URI.create(oauth2LoginUrl)).build();
+        return Response.seeOther(URI.create(oauth2Service.buildAuthorizationUrl(oauth2State, "", oauth2RedirectUrl))).build();
     }
 
     /**
@@ -87,20 +91,17 @@ public class Oauth {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Missing state or code").build();
         }
-        String storeRedirectUri = stateCache.retrieveAndRemoveState(state);
-        if (storeRedirectUri == null) {
+        // 验证state是否有效
+        if (stateCache.retrieveAndRemoveState(state) == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Invalid or expired state").build();
         }
         try {
             // 1️⃣ 用 HttpURLConnection 换 token
-            String tokenResp = postToken(code);
-
-            // 简单解析 access_token (假设返回 {"access_token":"xxx"})
-            String accessToken = parseAccessToken(tokenResp);
+            TokenResponse tokenResponse = oauth2Service.requestToken(code);
 
             // 2️⃣ 获取用户信息
-            String username = fetchUsername(accessToken);
+            UserInfo userInfo = oauth2Service.getUserInfo(tokenResponse.getAccessToken());
 
             // 3️⃣ 找到 Jira 用户
 //            ApplicationUser jiraUser = userManager.getUserByName(username);
@@ -112,40 +113,14 @@ public class Oauth {
             // LoginManager loginManager = ComponentAccessor.getComponent(DefaultAuthenticator.class);
             // loginManager.login(request, response, jiraUser);
             // 5️⃣ 302 重定向
+            URI uri = URI.create(redirectUri);
             Map<String, String> queryParams = new HashMap<>();
             queryParams.put("code", "");
-            URI uri = URI.create(redirectUri);
-            String path = uri.getPath();
-            String oauth2LoginUrl = Url.buildQueryUrl(path, queryParams) + "&" + uri.getQuery();
-            return Response.seeOther(URI.create(oauth2LoginUrl)).build();
+            return Response.seeOther(URI.create(Url.buildQueryUrl(uri.getPath(), queryParams) + "&" + uri.getQuery())).build();
 
 
         } catch (Exception e) {
             return Response.status(500).entity(e.getMessage()).build();
-        }
-    }
-
-    private String postToken(String code) throws IOException {
-        URL url = new URL("https://oauth-server.com/token");
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("POST");
-        conn.setDoOutput(true);
-
-        String params = "grant_type=authorization_code"
-                + "&code=" + URLEncoder.encode(code, "UTF-8")
-                + "&redirect_uri=" + URLEncoder.encode("https://jira.yourcompany.com/plugins/servlet/oauth2/callback", "UTF-8")
-                + "&client_id=YOUR_CLIENT_ID"
-                + "&client_secret=YOUR_CLIENT_SECRET";
-
-        try (OutputStream os = conn.getOutputStream()) {
-            os.write(params.getBytes("UTF-8"));
-        }
-
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = br.readLine()) != null) sb.append(line);
-            return sb.toString();
         }
     }
 
@@ -156,24 +131,5 @@ public class Oauth {
         int start = i + 16;
         int end = resp.indexOf("\"", start);
         return resp.substring(start, end);
-    }
-
-    private String fetchUsername(String accessToken) throws IOException {
-        URL url = new URL("https://oauth-server.com/userinfo");
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestProperty("Authorization", "Bearer " + accessToken);
-
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = br.readLine()) != null) sb.append(line);
-            String resp = sb.toString();
-
-            // 假设返回 {"username":"jirauser"}，简单解析
-            int i = resp.indexOf("\"username\":\"");
-            int start = i + 12;
-            int end = resp.indexOf("\"", start);
-            return resp.substring(start, end);
-        }
     }
 }
