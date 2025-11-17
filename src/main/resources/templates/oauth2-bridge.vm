@@ -1,19 +1,18 @@
 <html>
 <head>
-    <title>My Plugin Configuration</title>
-    ## 静态资源占位符，后面由 Servlet 写入
-    $resources
-</head>
-<body class="aui-page-hybrid">
-    <div id="page">
-        <header id="header" role="banner"></header>
-        <div id="content" class="page-content">
-            <div class="aui-page-header">
-                <div class="aui-page-header-main">
-                    <h2>My Plugin Configuration</h2>
-                </div>
-            </div>
+    <title>oauth2bridge</title>
+    <meta name="decorator" content="atl.general">
 
+    <!-- 引入 JIRA 标准 CSS -->
+    $webResourceManager.requireResourcesForContext("jira.general")
+    $webResourceManager.requireResourcesForContext("oauth2bridge")
+</head>
+<body>
+
+<section id="content" role="main">
+    <!-- 使用 AUI 页面布局 -->
+    <div class="aui-page-panel">
+        <div class="aui-page-panel-inner">
             <div id="message-container"></div>
 
             <form class="aui">
@@ -46,7 +45,10 @@
                     <input id="save-button" class="aui-button aui-button-primary" type="button" value="保存配置">
                 </div>
             </form>
+
         </div>
     </div>
+</section>
+
 </body>
 </html>

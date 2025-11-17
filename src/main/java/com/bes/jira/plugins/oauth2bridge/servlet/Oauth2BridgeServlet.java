@@ -51,14 +51,15 @@ public class Oauth2BridgeServlet extends HttpServlet {
         resp.setContentType("text/html;charset=UTF-8");
         // 加载 Jira 自带样式（必需）
 //        webResourceManager.requireResourcesForContext("atl.admin");
-        webResourceManager.requireResourcesForContext("oauth2bridge");
-
-        // 2. 获取资源 HTML（link/script 标签）
-        StringWriter sw = new StringWriter();
-        webResourceManager.includeResources(sw, UrlMode.RELATIVE);   // ⭐将资源标签写入字符串
+//        webResourceManager.requireResourcesForContext("oauth2bridge");
+//
+//        // 2. 获取资源 HTML（link/script 标签）
+//        StringWriter sw = new StringWriter();
+//        webResourceManager.includeResources(sw, UrlMode.RELATIVE);   // ⭐将资源标签写入字符串
 
         Map<String, Object> context = new HashMap<>();
-        context.put("resources", new RawHtml((sw.toString())));         // ⭐传给 VM
+        context.put("req", req);         // ⭐传给 VM
+        context.put("res", resp);         // ⭐传给 VM
 
         // 渲染模板
         renderer.render("templates/oauth2-bridge.vm", context, resp.getWriter());
