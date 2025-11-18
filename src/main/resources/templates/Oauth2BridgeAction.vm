@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>Oauth2Bridge</title>
+    <title>$i18n.getText("oauth2bridge.title")</title>
     <meta name="admin.active.section" content="admin_plugins_menu/oauth2-bridge-section"/>
     <meta name="admin.active.tab" content="oauth2-bridge-setting-item-link"/>
     <meta name="decorator" content="atl.admin"/>
