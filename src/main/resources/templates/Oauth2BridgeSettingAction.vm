@@ -7,26 +7,6 @@
 <form method="post">
     <input type="hidden" name="command" value="execute"/>
     <label>
-        Client ID:
-        <input type="text" name="clientId" placeholder="ClientId" value="$!action.clientId"/>
-    </label>
-
-    <label>
-        Client Secret:
-        <input type="text" name="clientSecret" placeholder="ClientSecret" value="$!action.clientSecret"/>
-    </label>
-
-    <label>
-        Authorization Endpoint:
-        <input type="text" name="authorizationEndpoint" placeholder="AuthorizationEndpoint" value="$!action.authorizationEndpoint"/>
-    </label>
-
-    <label>
-        Token Endpoint:
-        <input type="text" name="tokenEndpoint" placeholder="TokenEndpoint" value="$!action.tokenEndpoint"/>
-    </label>
-
-    <label>
         User Info Endpoint:
         <input type="text" name="userInfoEndpoint" placeholder="UserInfoEndpoint" value="$!action.userInfoEndpoint"/>
     </label>

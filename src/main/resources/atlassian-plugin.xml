@@ -18,34 +18,26 @@
         <resource type="download" name="images/" location="/images"/>
         <context>oauth2bridge</context>
     </web-resource>
-    <rest name="oauth2bridge Api" key="oauth2-bridge-api" i18n-name-key="oauth2-bridge-api.name" path="/oauth2bridge"
-          version="1.0">
-        <description>The oauth2bridge rest api</description>
-    </rest>
-    <servlet name="oauth2bridge Servlet" key="oauth2-bridge-servlet"
-             class="com.bes.jira.plugins.oauth2bridge.servlet.Oauth2BridgeServlet">
-        <url-pattern>/oauth2bridge</url-pattern>
-        <description>The oauth2bridge servlet</description>
-    </servlet>
-    <web-item key="oauth2-bridge-menu" name="oauth2bridge Menu" section="system.top.navigation.bar" weight="10">
+    <web-item key="oauth2-bridge-menu"
+              name="oauth2bridge Menu"
+              section="system.top.navigation.bar"
+              weight="10">
         <description>Link to oauth2-bridge page.</description>
         <label key="oauth2-bridge-menu.label"/>
         <link linkId="oauth2-bridge-menu"/>
+        <condition class="com.atlassian.jira.plugin.webfragment.conditions.IsAdminCondition"/>
     </web-item>
-    <web-section key="oauth2-bridge-section" name="oauth2bridge Section" location="oauth2-bridge-menu" weight="110"/>
+    <web-section key="oauth2-bridge-section"
+                 name="oauth2bridge Section"
+                 location="oauth2-bridge-menu"
+                 weight="110"/>
     <web-item key="oauth2-bridge-setting-item" name="oauth2bridge Setting"
-              i18n-name-key="oauth2-bridge-setting-item.name" section="oauth2-bridge-menu/oauth2-bridge-section"
+              i18n-name-key="oauth2-bridge-setting-item.name"
+              section="oauth2-bridge-menu/oauth2-bridge-section"
               weight="10">
         <description>Link to oauth2-bridge-setting page.</description>
         <label key="oauth2-bridge-setting-item.label"/>
-        <link linkId="oauth2-bridge-setting-item-link">/plugins/servlet/oauth2bridge</link>
-    </web-item>
-    <web-item key="oauth2-bridge-setting-item-webwork" name="oauth2bridge Setting(Webwork)"
-              i18n-name-key="oauth2-bridge-setting-item-webwork.name" section="oauth2-bridge-menu/oauth2-bridge-section"
-              weight="10">
-        <description>Link to oauth2-bridge-setting-webwork page.</description>
-        <label key="oauth2-bridge-setting-item-webwork.label"/>
-        <link linkId="oauth2-bridge-setting-item-link-webwork">/secure/Oauth2BridgeSetting!default.jspa</link>
+        <link linkId="oauth2-bridge-setting-item-link">/secure/Oauth2BridgeSetting!default.jspa</link>
     </web-item>
     <webwork1 key="oauth2-bridge-webwork1" name="oauth2bridge WebWork">
         <actions>

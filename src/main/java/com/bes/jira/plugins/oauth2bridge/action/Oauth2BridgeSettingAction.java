@@ -15,10 +15,6 @@ public class Oauth2BridgeSettingAction extends JiraWebActionSupport {
 
     private final Oauth2BridgeConfigService configService;
 
-    private String clientId;
-    private String clientSecret;
-    private String authorizationEndpoint;
-    private String tokenEndpoint;
     private String userInfoEndpoint;
 
     @Inject
@@ -28,62 +24,18 @@ public class Oauth2BridgeSettingAction extends JiraWebActionSupport {
 
     @Override
     public String doDefault() {
-        clientId = configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_ID);
-        clientSecret = configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_SECRET);
-        authorizationEndpoint = configService.getConfig(Oauth2BridgeConfigService.KEY_AUTHORIZATION_ENDPOINT);
-        tokenEndpoint = configService.getConfig(Oauth2BridgeConfigService.KEY_TOKEN_ENDPOINT);
         userInfoEndpoint = configService.getConfig(Oauth2BridgeConfigService.KEY_USERINFO_ENDPOINT);
 
-        log.info("Loaded config: clientId={}, clientSecret={}, authEndpoint={}, tokenEndpoint={}, userInfoEndpoint={}",
-                clientId, mask(clientSecret), authorizationEndpoint, tokenEndpoint, userInfoEndpoint);
+        log.info("Loaded config: userInfoEndpoint={}", userInfoEndpoint);
 
         return INPUT;
     }
 
     @Override
     public String doExecute() {
-        log.info("Saving config: clientId={}, clientSecret={}, authEndpoint={}, tokenEndpoint={}, userInfoEndpoint={}",
-                clientId, mask(clientSecret), authorizationEndpoint, tokenEndpoint, userInfoEndpoint);
-        // 可加入字段校验
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_CLIENT_ID, clientId);
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_CLIENT_SECRET, clientSecret);
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_AUTHORIZATION_ENDPOINT, authorizationEndpoint);
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_TOKEN_ENDPOINT, tokenEndpoint);
+        log.info("Saving config: clientId={}", userInfoEndpoint);
         configService.saveConfig(Oauth2BridgeConfigService.KEY_USERINFO_ENDPOINT, userInfoEndpoint);
         return SUCCESS;
-    }
-
-    // getter/setter
-    public String getClientId() {
-        return clientId;
-    }
-
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
-    }
-
-    public String getClientSecret() {
-        return clientSecret;
-    }
-
-    public void setClientSecret(String clientSecret) {
-        this.clientSecret = clientSecret;
-    }
-
-    public String getAuthorizationEndpoint() {
-        return authorizationEndpoint;
-    }
-
-    public void setAuthorizationEndpoint(String authorizationEndpoint) {
-        this.authorizationEndpoint = authorizationEndpoint;
-    }
-
-    public String getTokenEndpoint() {
-        return tokenEndpoint;
-    }
-
-    public void setTokenEndpoint(String tokenEndpoint) {
-        this.tokenEndpoint = tokenEndpoint;
     }
 
     public String getUserInfoEndpoint() {
@@ -92,11 +44,5 @@ public class Oauth2BridgeSettingAction extends JiraWebActionSupport {
 
     public void setUserInfoEndpoint(String userInfoEndpoint) {
         this.userInfoEndpoint = userInfoEndpoint;
-    }
-
-    // 遮掩敏感信息
-    private String mask(String s) {
-        if (s == null || s.length() <= 4) return "****";
-        return s.substring(0, 2) + "****" + s.substring(s.length() - 2);
     }
 }
