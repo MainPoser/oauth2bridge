@@ -1,9 +1,11 @@
 <html>
 <head>
-    <title>Oauth2Bridge Setting</title>
+    <title>Oauth2Bridge</title>
+    <meta name="admin.active.section" content="admin_plugins_menu/oauth2-bridge-section"/>
+    <meta name="admin.active.tab" content="oauth2-bridge-setting-item-link"/>
+    <meta name="decorator" content="atl.admin"/>
 </head>
 <body>
-<h1>Oauth2Bridge 配置</h1>
 <form method="post">
     <input type="hidden" name="command" value="execute"/>
     <label>

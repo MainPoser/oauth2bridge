@@ -9,16 +9,16 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 @Named
-public class Oauth2BridgeSettingAction extends JiraWebActionSupport {
+public class Oauth2BridgeAction extends JiraWebActionSupport {
 
-    private static final Logger log = LoggerFactory.getLogger(Oauth2BridgeSettingAction.class);
+    private static final Logger log = LoggerFactory.getLogger(Oauth2BridgeAction.class);
 
     private final Oauth2BridgeConfigService configService;
 
     private String userInfoEndpoint;
 
     @Inject
-    public Oauth2BridgeSettingAction(Oauth2BridgeConfigService configService) {
+    public Oauth2BridgeAction(Oauth2BridgeConfigService configService) {
         this.configService = configService;
     }
 

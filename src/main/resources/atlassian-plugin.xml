@@ -18,33 +18,26 @@
         <resource type="download" name="images/" location="/images"/>
         <context>oauth2bridge</context>
     </web-resource>
-    <web-item key="oauth2-bridge-menu"
-              name="oauth2bridge Menu"
-              section="system.top.navigation.bar"
-              weight="10">
-        <description>Link to oauth2-bridge page.</description>
-        <label key="oauth2-bridge-menu.label"/>
-        <link linkId="oauth2-bridge-menu"/>
-        <condition class="com.atlassian.jira.plugin.webfragment.conditions.IsAdminCondition"/>
-    </web-item>
     <web-section key="oauth2-bridge-section"
                  name="oauth2bridge Section"
-                 location="oauth2-bridge-menu"
-                 weight="110"/>
-    <web-item key="oauth2-bridge-setting-item" name="oauth2bridge Setting"
-              i18n-name-key="oauth2-bridge-setting-item.name"
-              section="oauth2-bridge-menu/oauth2-bridge-section"
+                 location="admin_plugins_menu"
+                 weight="110">
+        <label key="oauth2-bridge-section.label"/>
+    </web-section>
+    <web-item key="oauth2-bridge-web-item"
+              name="oauth2bridge WebItem"
+              section="admin_plugins_menu/oauth2-bridge-section"
               weight="10">
-        <description>Link to oauth2-bridge-setting page.</description>
-        <label key="oauth2-bridge-setting-item.label"/>
-        <link linkId="oauth2-bridge-setting-item-link">/secure/Oauth2BridgeSetting!default.jspa</link>
+        <description>Link to oauth2-bridge page.</description>
+        <label key="oauth2-bridge-web-item.label"/>
+        <link linkId="oauth2-bridge-web-item-link">/secure/Oauth2Bridge!default.jspa</link>
     </web-item>
-    <webwork1 key="oauth2-bridge-webwork1" name="oauth2bridge WebWork">
+    <webwork1 key="oauth2-bridge-webwork" name="oauth2bridge WebWork">
         <actions>
-            <action name="com.bes.jira.plugins.oauth2bridge.action.Oauth2BridgeSettingAction"
-                    alias="Oauth2BridgeSetting">
-                <view name="input">/templates/Oauth2BridgeSettingAction.vm</view>
-                <view name="success">/templates/Oauth2BridgeSettingAction.vm</view>
+            <action name="com.bes.jira.plugins.oauth2bridge.action.Oauth2BridgeAction"
+                    alias="Oauth2Bridge">
+                <view name="input">/templates/Oauth2BridgeAction.vm</view>
+                <view name="success">/templates/Oauth2BridgeAction.vm</view>
             </action>
         </actions>
     </webwork1>
