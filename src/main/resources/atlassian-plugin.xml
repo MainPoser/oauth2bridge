@@ -30,12 +30,12 @@
               weight="10">
         <description>Link to oauth2-bridge page.</description>
         <label key="oauth2-bridge-web-item.label"/>
-        <link linkId="oauth2-bridge-web-item-link">/secure/Oauth2Bridge!default.jspa</link>
+        <link linkId="oauth2-bridge-web-item-link">/secure/oauth2bridge.jspa</link>
     </web-item>
     <webwork1 key="oauth2-bridge-webwork" name="oauth2bridge WebWork">
         <actions>
             <action name="com.bes.jira.plugins.oauth2bridge.action.Oauth2BridgeAction"
-                    alias="Oauth2Bridge">
+                    alias="oauth2bridge">
                 <view name="input">/templates/Oauth2BridgeAction.vm</view>
                 <view name="success">/templates/Oauth2BridgeAction.vm</view>
             </action>
