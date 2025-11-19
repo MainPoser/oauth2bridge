@@ -32,7 +32,7 @@ public class HttpClientFactory {
                 oauth2BridgeConfigService.getConfig(Oauth2BridgeConfigService.KEY_INSECURE_SKIP_VERIFY)
         );
         String trustCaCert = oauth2BridgeConfigService.getConfig(Oauth2BridgeConfigService.KEY_TRUST_CA_CERT);
-        String userinfoEndpoint = oauth2BridgeConfigService.getConfig(Oauth2BridgeConfigService.KEY_USERINFO_ENDPOINT);
+        String userinfoEndpoint = oauth2BridgeConfigService.getConfig(Oauth2BridgeConfigService.KEY_INTROSPECTION_ENDPOINT);
 
         // 1. 创建 HttpClient 实例
         HttpClient httpClient = new HttpClient();

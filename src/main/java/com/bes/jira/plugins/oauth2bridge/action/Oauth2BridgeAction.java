@@ -15,7 +15,9 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
 
     private final Oauth2BridgeConfigService configService;
 
-    private String userInfoEndpoint;
+    private String introspectionEndpoint;
+    private String clientId;
+    private String clientSecret;
     public boolean insecureSkipVerify;
     public String trustCaCert;
     public long sessionTimeoutSec;
@@ -27,7 +29,9 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
 
     @Override
     public String doDefault() {
-        userInfoEndpoint = configService.getConfig(Oauth2BridgeConfigService.KEY_USERINFO_ENDPOINT);
+        introspectionEndpoint = configService.getConfig(Oauth2BridgeConfigService.KEY_INTROSPECTION_ENDPOINT);
+        clientId = configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_ID);
+        clientSecret = configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_SECRET);
         insecureSkipVerify = Boolean.parseBoolean(configService.getConfig(Oauth2BridgeConfigService.KEY_INSECURE_SKIP_VERIFY));
         trustCaCert = configService.getConfig(Oauth2BridgeConfigService.KEY_TRUST_CA_CERT);
         try {
@@ -41,31 +45,49 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
             sessionTimeoutSec = 30 * 60;
             configService.saveConfig(Oauth2BridgeConfigService.KEY_SESSION_TIMEOUT_SEC, String.valueOf(sessionTimeoutSec));
         }
-        log.debug("Loaded config: userInfoEndpoint={},insecureSkipVerify={},trustCaCert={},sessionTimeoutSec={}",
-                userInfoEndpoint, insecureSkipVerify, trustCaCert, sessionTimeoutSec);
+        log.debug("Loaded config: introspectionEndpoint={},clientId={},clientSecret={},insecureSkipVerify={},trustCaCert={},sessionTimeoutSec={}",
+                introspectionEndpoint, clientId, clientSecret, insecureSkipVerify, trustCaCert, sessionTimeoutSec);
         return INPUT;
     }
 
     @Override
     public String doExecute() {
-        if (this.command == null || this.command.isEmpty()){
-            return  this.doDefault();
+        if (this.command == null || this.command.isEmpty()) {
+            return this.doDefault();
         }
-        log.debug("Saving config: userInfoEndpoint={},insecureSkipVerify={},trustCaCert={},sessionTimeoutSec={}",
-                userInfoEndpoint, insecureSkipVerify, trustCaCert, sessionTimeoutSec);
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_USERINFO_ENDPOINT, userInfoEndpoint);
+        log.debug("Saving config: introspectionEndpoint={},clientId={},clientSecret={},insecureSkipVerify={},trustCaCert={},sessionTimeoutSec={}",
+                introspectionEndpoint, clientId, clientSecret, insecureSkipVerify, trustCaCert, sessionTimeoutSec);
+        configService.saveConfig(Oauth2BridgeConfigService.KEY_INTROSPECTION_ENDPOINT, introspectionEndpoint);
+        configService.saveConfig(Oauth2BridgeConfigService.KEY_CLIENT_ID, clientId);
+        configService.saveConfig(Oauth2BridgeConfigService.KEY_CLIENT_SECRET, clientSecret);
         configService.saveConfig(Oauth2BridgeConfigService.KEY_INSECURE_SKIP_VERIFY, String.valueOf(insecureSkipVerify));
         configService.saveConfig(Oauth2BridgeConfigService.KEY_TRUST_CA_CERT, trustCaCert);
         configService.saveConfig(Oauth2BridgeConfigService.KEY_SESSION_TIMEOUT_SEC, String.valueOf(sessionTimeoutSec));
         return SUCCESS;
     }
 
-    public String getUserInfoEndpoint() {
-        return userInfoEndpoint;
+    public String getIntrospectionEndpoint() {
+        return introspectionEndpoint;
     }
 
-    public void setUserInfoEndpoint(String userInfoEndpoint) {
-        this.userInfoEndpoint = userInfoEndpoint;
+    public void setIntrospectionEndpoint(String introspectionEndpoint) {
+        this.introspectionEndpoint = introspectionEndpoint;
+    }
+
+    public String getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
+    }
+
+    public String getClientSecret() {
+        return clientSecret;
+    }
+
+    public void setClientSecret(String clientSecret) {
+        this.clientSecret = clientSecret;
     }
 
     public boolean isInsecureSkipVerify() {

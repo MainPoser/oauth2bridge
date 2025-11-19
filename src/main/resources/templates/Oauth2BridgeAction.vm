@@ -52,12 +52,32 @@
                 <legend><span>$i18n.getText("oauth2bridge.fieldset.endpoint"):</span></legend>
 
                 <div class="aui-field-group">
-                    <label for="userInfoEndpointId">
-                        <strong>$i18n.getText("oauth2bridge.userinfoEndpoint"):</strong>
+                    <label for="introspectionEndpointId">
+                        <strong>$i18n.getText("oauth2bridge.introspectionEndpoint"):</strong>
                     </label>
-                    <input class="text medium-long-field" type="text" id="userInfoEndpointId" name="userInfoEndpoint" placeholder="$i18n.getText("oauth2bridge.userinfoEndpoint.placeholder")" value="$!action.userInfoEndpoint"/>
+                    <input class="text medium-long-field" type="text" id="introspectionEndpointId" name="introspectionEndpoint" placeholder="$i18n.getText("oauth2bridge.introspectionEndpoint.placeholder")" value="$!action.introspectionEndpoint"/>
                     <div class="description">
-                        $i18n.getText("oauth2bridge.userinfoEndpoint.description")
+                        $i18n.getText("oauth2bridge.introspectionEndpoint.description")
+                    </div>
+                </div>
+
+                <div class="aui-field-group">
+                    <label for="clientIdId">
+                        <strong>$i18n.getText("oauth2bridge.clientId"):</strong>
+                    </label>
+                    <input class="text medium-long-field" type="text" id="clientIdId" name="clientId" placeholder="$i18n.getText("oauth2bridge.clientId.placeholder")" value="$!action.clientId"/>
+                    <div class="description">
+                        $i18n.getText("oauth2bridge.clientId.description")
+                    </div>
+                </div>
+
+                <div class="aui-field-group">
+                    <label for="clientSecretId">
+                        <strong>$i18n.getText("oauth2bridge.clientSecret"):</strong>
+                    </label>
+                    <input class="text medium-long-field" type="password" id="clientSecretId" name="clientSecret" placeholder="$i18n.getText("oauth2bridge.clientSecret.placeholder")" value="$!action.clientSecret"/>
+                    <div class="description">
+                        $i18n.getText("oauth2bridge.clientSecret.description")
                     </div>
                 </div>
             </fieldset>

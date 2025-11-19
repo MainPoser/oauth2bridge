@@ -1,9 +1,10 @@
 package com.bes.jira.plugins.oauth2bridge.service;
 
 import com.bes.jira.plugins.oauth2bridge.http.factory.HttpClientFactory;
-import com.bes.jira.plugins.oauth2bridge.model.UserInfo;
+import com.bes.jira.plugins.oauth2bridge.model.Introspection;
 import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.NameValuePair;
+import org.apache.commons.httpclient.methods.PostMethod;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,14 +28,22 @@ public class Oauth2Service {
     }
 
     /**
-     * 获取用户信息（返回 JSON 字符串）
+     * 校验token是否有效并获取用户信息
      */
-    public UserInfo getUserInfo(String accessToken) throws IOException {
+    public Introspection introspection(String accessToken) throws IOException {
         HttpClient client = httpClientFactory.createClient();
-        GetMethod get = new GetMethod(configService.getConfig(Oauth2BridgeConfigService.KEY_USERINFO_ENDPOINT));
-        get.setRequestHeader("Authorization", "Bearer " + accessToken);
+        PostMethod postMethod = new PostMethod(configService.getConfig(Oauth2BridgeConfigService.KEY_INTROSPECTION_ENDPOINT));
+        // 设置请求头（可选）
+        postMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+        // 设置表单参数（核心）
+        NameValuePair[] data = {
+                new NameValuePair("client_id", configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_ID)),
+                new NameValuePair("client_secret", configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_SECRET)),
+                new NameValuePair("token", accessToken)
+        };
+        postMethod.setRequestBody(data);
         try {
-            int status = client.executeMethod(get);
+            int status = client.executeMethod(postMethod);
             // ---- token 是否失效！ ----
             if (status == 401 || status == 403) {
                 throw new InvalidParameterException("TOKEN_INVALID");
@@ -42,10 +51,10 @@ public class Oauth2Service {
             if (status != 200) {
                 throw new IOException("Userinfo returned HTTP status " + status);
             }
-            String body = get.getResponseBodyAsString();
-            return mapper.readValue(body, UserInfo.class);
+            String body = postMethod.getResponseBodyAsString();
+            return mapper.readValue(body, Introspection.class);
         } finally {
-            get.releaseConnection();
+            postMethod.releaseConnection();
         }
     }
 }

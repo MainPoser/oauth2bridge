@@ -18,7 +18,9 @@ public class Oauth2BridgeConfigService {
     // 插件存储的唯一 key，用于隔离配置
     private static final String PLUGIN_STORAGE_KEY = "com.bes.jira.plugins.oauth2bridge.";
 
-    public static String KEY_USERINFO_ENDPOINT = "userInfoEndpoint";
+    public static String KEY_INTROSPECTION_ENDPOINT = "introspectionEndpoint";
+    public static String KEY_CLIENT_ID = "clientId";
+    public static String KEY_CLIENT_SECRET = "clientSecret";
     public static String KEY_INSECURE_SKIP_VERIFY = "insecureSkipVerify";
     public static String KEY_TRUST_CA_CERT = "trustCaCert";
     public static String KEY_SESSION_TIMEOUT_SEC = "sessionTimeoutSec";

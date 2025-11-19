@@ -4,7 +4,7 @@ import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.security.JiraAuthenticationContext;
 import com.atlassian.jira.user.ApplicationUser;
 import com.bes.jira.plugins.oauth2bridge.cache.TokenCache;
-import com.bes.jira.plugins.oauth2bridge.model.UserInfo;
+import com.bes.jira.plugins.oauth2bridge.model.Introspection;
 import com.bes.jira.plugins.oauth2bridge.service.Oauth2BridgeConfigService;
 import com.bes.jira.plugins.oauth2bridge.service.Oauth2Service;
 import org.slf4j.Logger;
@@ -60,8 +60,8 @@ public class Oauth2BridgeServletFilter implements Filter {
                 ApplicationUser user = tokenCache.get(accessToken);
                 if (user == null) {
                     // 缓存找不到再去oauth2服务器获取,同时能校验access_token是否有效
-                    UserInfo userInfo = oauth2Service.getUserInfo(accessToken);
-                    user = ComponentAccessor.getUserManager().getUserByName(userInfo.getName());
+                    Introspection introspection = oauth2Service.introspection(accessToken);
+                    user = ComponentAccessor.getUserManager().getUserByName(introspection.getSub());
                     if (user == null) {
                         httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "User not found in Jira");
                         return;

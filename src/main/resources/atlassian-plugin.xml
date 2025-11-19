@@ -32,7 +32,7 @@
         <label key="oauth2-bridge-web-item.label"/>
         <link linkId="oauth2-bridge-web-item-link">/secure/oauth2bridge.jspa</link>
     </web-item>
-    <webwork1 key="oauth2-bridge-webwork" name="oauth2bridge WebWork">
+    <webwork1 key="oauth2-bridge-webwork" name="oauth2bridge WebWork" roles-required="sysadmin">
         <actions>
             <action name="com.bes.jira.plugins.oauth2bridge.action.Oauth2BridgeAction"
                     alias="oauth2bridge">
