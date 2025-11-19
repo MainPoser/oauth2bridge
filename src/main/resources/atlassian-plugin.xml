@@ -46,6 +46,6 @@
                     class="com.bes.jira.plugins.oauth2bridge.servlet.filter.Oauth2BridgeServletFilter"
                     location="before-dispatch">
         <description>OAuth2Bridge Servlet Filter Plugin</description>
-        <url-pattern>/*</url-pattern>
+        <url-pattern>/rest/*</url-pattern>
     </servlet-filter>
 </atlassian-plugin>
