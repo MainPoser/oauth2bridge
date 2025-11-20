@@ -1,12 +1,14 @@
 package com.bes.jira.plugins.oauth2bridge.action;
 
 import com.atlassian.jira.web.action.JiraWebActionSupport;
+import com.bes.jira.plugins.oauth2bridge.model.Oauth2BridgeConfig;
 import com.bes.jira.plugins.oauth2bridge.service.Oauth2BridgeConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import java.io.IOException;
 
 @Named
 public class Oauth2BridgeAction extends JiraWebActionSupport {
@@ -29,40 +31,26 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
 
     @Override
     public String doDefault() {
-        introspectionEndpoint = configService.getConfig(Oauth2BridgeConfigService.KEY_INTROSPECTION_ENDPOINT);
-        clientId = configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_ID);
-        clientSecret = configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_SECRET);
-        insecureSkipVerify = Boolean.parseBoolean(configService.getConfig(Oauth2BridgeConfigService.KEY_INSECURE_SKIP_VERIFY));
-        trustCaCert = configService.getConfig(Oauth2BridgeConfigService.KEY_TRUST_CA_CERT);
-        try {
-            sessionTimeoutSec = Long.parseLong(configService.getConfig(Oauth2BridgeConfigService.KEY_SESSION_TIMEOUT_SEC));
-        } catch (NumberFormatException e) {
-            log.warn("Parse sessionTimeoutSec failed, use default");
-        }
-
-        // 如果为空，设置默认值
-        if (sessionTimeoutSec <= 0) {
-            sessionTimeoutSec = 30 * 60;
-            configService.saveConfig(Oauth2BridgeConfigService.KEY_SESSION_TIMEOUT_SEC, String.valueOf(sessionTimeoutSec));
-        }
-        log.debug("Loaded config: introspectionEndpoint={},clientId={},clientSecret={},insecureSkipVerify={},trustCaCert={},sessionTimeoutSec={}",
-                introspectionEndpoint, clientId, clientSecret, insecureSkipVerify, trustCaCert, sessionTimeoutSec);
+        Oauth2BridgeConfig config = configService.getConfig();
+        introspectionEndpoint = config.getIntrospectionEndpoint();
+        clientId = config.getClientId();
+        clientSecret = config.getClientSecret();
+        insecureSkipVerify = config.isInsecureSkipVerify();
+        trustCaCert = config.getIntrospectionEndpoint();
+        sessionTimeoutSec = config.getSessionTimeoutSec();
+        log.debug("Loaded config: {}", config);
         return INPUT;
     }
 
     @Override
-    public String doExecute() {
+    public String doExecute() throws IOException {
         if (this.command == null || this.command.isEmpty()) {
             return this.doDefault();
         }
         log.debug("Saving config: introspectionEndpoint={},clientId={},clientSecret={},insecureSkipVerify={},trustCaCert={},sessionTimeoutSec={}",
                 introspectionEndpoint, clientId, clientSecret, insecureSkipVerify, trustCaCert, sessionTimeoutSec);
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_INTROSPECTION_ENDPOINT, introspectionEndpoint);
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_CLIENT_ID, clientId);
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_CLIENT_SECRET, clientSecret);
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_INSECURE_SKIP_VERIFY, String.valueOf(insecureSkipVerify));
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_TRUST_CA_CERT, trustCaCert);
-        configService.saveConfig(Oauth2BridgeConfigService.KEY_SESSION_TIMEOUT_SEC, String.valueOf(sessionTimeoutSec));
+        Oauth2BridgeConfig oauth2BridgeConfig = new Oauth2BridgeConfig(introspectionEndpoint, clientId, clientSecret, insecureSkipVerify, trustCaCert, sessionTimeoutSec);
+        configService.saveConfig(oauth2BridgeConfig);
         return SUCCESS;
     }
 

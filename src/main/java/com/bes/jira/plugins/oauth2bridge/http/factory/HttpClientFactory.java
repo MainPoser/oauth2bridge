@@ -28,11 +28,9 @@ public class HttpClientFactory {
      * @return 局部配置好的 HttpClient 实例
      */
     public HttpClient createClient() {
-        boolean insecureSkipVerify = Boolean.parseBoolean(
-                oauth2BridgeConfigService.getConfig(Oauth2BridgeConfigService.KEY_INSECURE_SKIP_VERIFY)
-        );
-        String trustCaCert = oauth2BridgeConfigService.getConfig(Oauth2BridgeConfigService.KEY_TRUST_CA_CERT);
-        String userinfoEndpoint = oauth2BridgeConfigService.getConfig(Oauth2BridgeConfigService.KEY_INTROSPECTION_ENDPOINT);
+        boolean insecureSkipVerify = oauth2BridgeConfigService.getConfig().isInsecureSkipVerify();
+        String trustCaCert = oauth2BridgeConfigService.getConfig().getTrustCaCert();
+        String introspectionEndpoint = oauth2BridgeConfigService.getConfig().getIntrospectionEndpoint();
 
         // 1. 创建 HttpClient 实例
         HttpClient httpClient = new HttpClient();
@@ -44,7 +42,7 @@ public class HttpClientFactory {
 
         try {
             // 3. 解析 URL 以获取主机信息
-            URL url = new URL(userinfoEndpoint);
+            URL url = new URL(introspectionEndpoint);
             int port = url.getPort() == -1 ? 443 : url.getPort();
 
             // 4. 创建自定义 Socket Factory

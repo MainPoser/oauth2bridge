@@ -35,14 +35,7 @@ public class Oauth2BridgeServletFilter implements Filter {
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        String sessionTimeoutSecStr = this.oauth2BridgeConfigService.getConfig(Oauth2BridgeConfigService.KEY_SESSION_TIMEOUT_SEC);
-        long sessionTimeoutSec = 30 * 60;
-        try {
-            sessionTimeoutSec = Long.parseLong(sessionTimeoutSecStr);
-        } catch (NumberFormatException e) {
-            log.warn("Parse sessionTimeoutSec failed, use default");
-        }
-        this.tokenCache = new TokenCache(sessionTimeoutSec);
+        this.tokenCache = new TokenCache(this.oauth2BridgeConfigService.getConfig().getSessionTimeoutSec());
     }
 
     @Override

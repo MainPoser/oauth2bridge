@@ -34,13 +34,13 @@ public class Oauth2Service {
      */
     public Introspection introspection(String accessToken) throws IOException {
         HttpClient client = httpClientFactory.createClient();
-        PostMethod postMethod = new PostMethod(configService.getConfig(Oauth2BridgeConfigService.KEY_INTROSPECTION_ENDPOINT));
+        PostMethod postMethod = new PostMethod(configService.getConfig().getIntrospectionEndpoint());
         // 设置请求头（可选）
         postMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
         // 设置表单参数（核心）
         NameValuePair[] data = {
-                new NameValuePair("client_id", configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_ID)),
-                new NameValuePair("client_secret", configService.getConfig(Oauth2BridgeConfigService.KEY_CLIENT_SECRET)),
+                new NameValuePair("client_id", configService.getConfig().getClientId()),
+                new NameValuePair("client_secret", configService.getConfig().getClientSecret()),
                 new NameValuePair("token", accessToken)
         };
         postMethod.setRequestBody(data);
@@ -83,7 +83,7 @@ public class Oauth2Service {
 
             // 反序列化
             return mapper.readValue(responseBody, Introspection.class);
-        }catch (IOException e) {
+        } catch (IOException e) {
             // 捕获 HTTP 客户端执行错误或 JSON/IO 错误
             log.error("!! [Introspection] Fatal I/O or JSON parsing error during request to {}: {}", requestUrl, e.getMessage(), e);
             throw e; // 重新抛出，让上层调用者处理
