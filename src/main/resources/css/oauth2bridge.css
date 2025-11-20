@@ -1,0 +1,28 @@
+/* 密码框容器：设置为 inline-block 以便包裹住固定宽度的 input */
+.password-input-wrapper {
+    position: relative;
+    display: block;
+    max-width: 100%;
+}
+
+/* 给输入框右侧留出空间放图标 */
+#clientSecretId {
+    padding-right: 30px;
+}
+
+/* 图标定位 */
+.password-toggle-icon {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    opacity: 0.6;
+    z-index: 2;
+    color: #6b778c; /* AUI 默认灰色 */
+}
+
+.password-toggle-icon:hover {
+    opacity: 1;
+    color: #172b4d; /* 悬停加深 */
+}

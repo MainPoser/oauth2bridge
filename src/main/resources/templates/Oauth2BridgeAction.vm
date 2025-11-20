@@ -70,7 +70,10 @@
                     <label for="clientSecretId" class="aui-label" data-tooltip="$i18n.getText('oauth2bridge.clientSecret.description')" data-placement="right">
                         <strong>$i18n.getText("oauth2bridge.clientSecret"):</strong>
                     </label>
-                    <input class="text medium-long-field" type="password" id="clientSecretId" name="clientSecret" placeholder="$i18n.getText('oauth2bridge.clientSecret.placeholder')" value="$!action.clientSecret"/>
+                    <div class="password-input-wrapper">
+                        <input class="text medium-long-field" type="password" id="clientSecretId" name="clientSecret" placeholder="$i18n.getText('oauth2bridge.clientSecret.placeholder')" value="$!action.clientSecret"/>
+                        <span id="togglePasswordBtn" class="aui-icon aui-icon-small aui-iconfont-view password-toggle-icon" title="Show Password">Show/Hide</span>
+                    </div>
                 </div>
             </fieldset>
 
