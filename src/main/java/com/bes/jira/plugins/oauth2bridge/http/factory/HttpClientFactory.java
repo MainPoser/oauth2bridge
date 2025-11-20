@@ -1,17 +1,36 @@
 package com.bes.jira.plugins.oauth2bridge.http.factory;
 
-import com.bes.jira.plugins.oauth2bridge.socket.factory.CustomSSLSocketFactory;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.protocol.Protocol;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContexts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Named;
-import java.net.URL;
+import javax.net.ssl.SSLContext;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.util.Objects;
 
 @Named
 public class HttpClientFactory {
     private static final Logger log = LoggerFactory.getLogger(HttpClientFactory.class);
+
+    // --- 分别缓存三种类型的 Client ---
+    private volatile CloseableHttpClient standardClient;
+    private volatile CloseableHttpClient insecureClient;
+
+    // 自定义证书 Client 及其对应的证书指纹（或内容字符串）
+    private volatile CloseableHttpClient customClient;
+    private String cachedCustomCertContent;
+
+    private final Object lock = new Object();
 
     public HttpClientFactory() {
     }
@@ -21,34 +40,171 @@ public class HttpClientFactory {
      *
      * @return 局部配置好的 HttpClient 实例
      */
-    public HttpClient createClient(boolean insecureSkipVerify, String trustCaCert, String introspectionEndpoint) {
-        // 1. 创建 HttpClient 实例
-        HttpClient httpClient = new HttpClient();
-
-        // 2. 不跳过证书，且未配置自定义证书。返回默认客户端
-        if (!insecureSkipVerify && "".equals(trustCaCert)) {
-            return httpClient;
+    public CloseableHttpClient createClient(boolean insecureSkipVerify, String trustCaCert) {
+        // 优先级 1: 如果要求跳过验证，返回 InsecureClient
+        if (insecureSkipVerify) {
+            return getInsecureClient();
         }
 
+        // 优先级 2: 如果提供了证书，返回 CustomClient (会检查证书是否变化)
+        if (!trustCaCert.isEmpty()) {
+            return getCustomClient(trustCaCert);
+        }
+
+        // 优先级 3: 默认情况，返回 StandardClient
+        return getStandardClient();
+    }
+
+    // ---------------------------------------------------------
+    // 1. 获取 Standard Client (懒加载单例)
+    // ---------------------------------------------------------
+    private CloseableHttpClient getStandardClient() {
+        if (standardClient != null) {
+            return standardClient;
+        }
+        synchronized (lock) {
+            if (standardClient == null) {
+                log.info("Initializing Standard HttpClient");
+                standardClient = createInternal(false, null);
+            }
+            return standardClient;
+        }
+    }
+
+    // ---------------------------------------------------------
+    // 2. 获取 Insecure Client (懒加载单例)
+    // ---------------------------------------------------------
+    private CloseableHttpClient getInsecureClient() {
+        if (insecureClient != null) {
+            return insecureClient;
+        }
+        synchronized (lock) {
+            if (insecureClient == null) {
+                log.info("Initializing Insecure HttpClient (Skip Verify)");
+                insecureClient = createInternal(true, null);
+            }
+            return insecureClient;
+        }
+    }
+
+    // ---------------------------------------------------------
+    // 3. 获取 Custom Client (变更检测)
+    // ---------------------------------------------------------
+    private CloseableHttpClient getCustomClient(String trustCaCert) {
+        // 检查是否已存在且证书内容未变
+        if (customClient != null && Objects.equals(cachedCustomCertContent, trustCaCert)) {
+            return customClient;
+        }
+
+        synchronized (lock) {
+            // 双重检查
+            if (customClient != null && Objects.equals(cachedCustomCertContent, trustCaCert)) {
+                return customClient;
+            }
+
+            // 临时存储旧的客户端实例，以便在创建成功后关闭
+            CloseableHttpClient oldClient = customClient;
+            String logMessage;
+
+            if (oldClient != null) {
+                logMessage = "Custom Certificate changed. Attempting to create new Custom HttpClient.";
+            } else {
+                logMessage = "Initializing Custom HttpClient with provided certificate.";
+            }
+            log.info(logMessage);
+
+            try {
+                // 创建新的
+                CloseableHttpClient newClient = createInternal(false, trustCaCert);
+                // 创建成功后，才关闭旧的客户端
+                if (oldClient != null) {
+                    log.info("Successfully created new Custom HttpClient. Closing previous one.");
+                    closeClient(oldClient); // 关闭旧的
+                }
+                // 6. 更新全局变量为新的客户端实例
+                customClient = newClient;
+                // 7. 更新缓存的证书内容
+                cachedCustomCertContent = trustCaCert;
+                return customClient;
+            } catch (Exception e) {
+                log.error("Failed to create custom http client. Existing client remains operational if it was initialized.", e);
+                // 保留抛出异常的逻辑，确保上层调用者知道客户端初始化失败
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    // ---------------------------------------------------------
+    // 内部工厂方法 (复用创建逻辑)
+    // ---------------------------------------------------------
+    private CloseableHttpClient createInternal(boolean insecureSkipVerify, String trustCaCert) {
         try {
-            // 3. 解析 URL 以获取主机信息
-            URL url = new URL(introspectionEndpoint);
-            int port = url.getPort() == -1 ? 443 : url.getPort();
+            SSLContext sslContext;
+            SSLConnectionSocketFactory sslSocketFactory;
 
-            // 4. 创建自定义 Socket Factory
-            CustomSSLSocketFactory customFactory = new CustomSSLSocketFactory(insecureSkipVerify, trustCaCert);
+            if (insecureSkipVerify) {
+                // Insecure 模式
+                sslContext = SSLContexts.custom()
+                        .loadTrustMaterial(null, (chain, authType) -> true)
+                        .build();
+                sslSocketFactory = new SSLConnectionSocketFactory(sslContext, NoopHostnameVerifier.INSTANCE);
 
-            // 5. 创建自定义 Protocol 实例
-            Protocol customHttps = new Protocol("https", customFactory, port);
+            } else if (!trustCaCert.isEmpty()) {
+                // Custom Cert 模式
+                KeyStore trustStore = createTrustStoreWithCert(trustCaCert);
+                sslContext = SSLContexts.custom()
+                        .loadTrustMaterial(trustStore, null)
+                        .build();
+                sslSocketFactory = new SSLConnectionSocketFactory(sslContext);
 
-            // 6. 【核心步骤】为这个 HttpClient 实例的目标主机局部设置 Protocol
-            // 注意：HttpClient 3.x 没有针对所有主机的局部设置，必须针对目标主机设置
-            httpClient.getHostConfiguration().setHost(url.getHost(), port, customHttps);
-            return httpClient;
+            } else {
+                // Standard 模式
+                sslContext = SSLContexts.createSystemDefault();
+                sslSocketFactory = new SSLConnectionSocketFactory(sslContext);
+            }
+
+            return HttpClients.custom()
+                    .setSSLSocketFactory(sslSocketFactory)
+                    .setMaxConnTotal(200)
+                    .setMaxConnPerRoute(20)
+                    .build();
+
         } catch (Exception e) {
-            // 记录异常，如果设置失败，则返回默认的 HttpClient
-            log.error("CreateClient with CustomSSLSocketFactory Failed: {},use default client", e.getMessage());
-            return new HttpClient();
+            throw new RuntimeException("Failed to create HttpClient", e);
+        }
+    }
+
+    private KeyStore createTrustStoreWithCert(String certString) throws Exception {
+        KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        keyStore.load(null, null);
+        CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+        ByteArrayInputStream certInputStream = new ByteArrayInputStream(certString.getBytes(StandardCharsets.UTF_8));
+        X509Certificate certificate = (X509Certificate) certFactory.generateCertificate(certInputStream);
+        keyStore.setCertificateEntry("custom-ca", certificate);
+        return keyStore;
+    }
+
+    private void closeClient(CloseableHttpClient client) {
+        if (client != null) {
+            try {
+                client.close();
+            } catch (IOException e) {
+                log.warn("Error closing HttpClient", e);
+            }
+        }
+    }
+
+    /**
+     * 插件卸载时调用，清理所有资源
+     */
+    public void destroy() {
+        synchronized (lock) {
+            closeClient(standardClient);
+            closeClient(insecureClient);
+            closeClient(customClient);
+            standardClient = null;
+            insecureClient = null;
+            customClient = null;
         }
     }
 }
