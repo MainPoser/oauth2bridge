@@ -1,8 +1,8 @@
 package com.bes.jira.plugins.oauth2bridge.action;
 
 import com.atlassian.jira.web.action.JiraWebActionSupport;
-import com.bes.jira.plugins.oauth2bridge.model.Oauth2BridgeConfig;
-import com.bes.jira.plugins.oauth2bridge.service.Oauth2BridgeConfigService;
+import com.bes.jira.plugins.oauth2bridge.model.Oauth2BridgeSetting;
+import com.bes.jira.plugins.oauth2bridge.service.SettingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +15,7 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
 
     private static final Logger log = LoggerFactory.getLogger(Oauth2BridgeAction.class);
 
-    private final Oauth2BridgeConfigService configService;
+    private final SettingService settingService;
 
     private String introspectionEndpoint;
     private String clientId;
@@ -25,20 +25,20 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
     public long sessionTimeoutSec;
 
     @Inject
-    public Oauth2BridgeAction(Oauth2BridgeConfigService configService) {
-        this.configService = configService;
+    public Oauth2BridgeAction(SettingService settingService) {
+        this.settingService = settingService;
     }
 
     @Override
     public String doDefault() {
-        Oauth2BridgeConfig config = configService.getConfig();
-        introspectionEndpoint = config.getIntrospectionEndpoint();
-        clientId = config.getClientId();
-        clientSecret = config.getClientSecret();
-        insecureSkipVerify = config.isInsecureSkipVerify();
-        trustCaCert = config.getIntrospectionEndpoint();
-        sessionTimeoutSec = config.getSessionTimeoutSec();
-        log.debug("Loaded config: {}", config);
+        Oauth2BridgeSetting setting = settingService.getSetting();
+        introspectionEndpoint = setting.getIntrospectionEndpoint();
+        clientId = setting.getClientId();
+        clientSecret = setting.getClientSecret();
+        insecureSkipVerify = setting.isInsecureSkipVerify();
+        trustCaCert = setting.getIntrospectionEndpoint();
+        sessionTimeoutSec = setting.getSessionTimeoutSec();
+        log.debug("Loaded setting: {}", setting);
         return INPUT;
     }
 
@@ -47,10 +47,10 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
         if (this.command == null || this.command.isEmpty()) {
             return this.doDefault();
         }
-        log.debug("Saving config: introspectionEndpoint={},clientId={},clientSecret={},insecureSkipVerify={},trustCaCert={},sessionTimeoutSec={}",
+        log.debug("Saving setting: introspectionEndpoint={},clientId={},clientSecret={},insecureSkipVerify={},trustCaCert={},sessionTimeoutSec={}",
                 introspectionEndpoint, clientId, clientSecret, insecureSkipVerify, trustCaCert, sessionTimeoutSec);
-        Oauth2BridgeConfig oauth2BridgeConfig = new Oauth2BridgeConfig(introspectionEndpoint, clientId, clientSecret, insecureSkipVerify, trustCaCert, sessionTimeoutSec);
-        configService.saveConfig(oauth2BridgeConfig);
+        Oauth2BridgeSetting oauth2BridgeSetting = new Oauth2BridgeSetting(introspectionEndpoint, clientId, clientSecret, insecureSkipVerify, trustCaCert, sessionTimeoutSec);
+        settingService.updateSetting(oauth2BridgeSetting);
         return SUCCESS;
     }
 

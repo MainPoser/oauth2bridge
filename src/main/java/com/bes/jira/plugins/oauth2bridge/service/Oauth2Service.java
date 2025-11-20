@@ -20,12 +20,12 @@ public class Oauth2Service {
 
     private static final Logger log = LoggerFactory.getLogger(Oauth2Service.class);
 
-    private final Oauth2BridgeConfigService configService;
+    private final SettingService settingService;
     private final HttpClientFactory httpClientFactory;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public Oauth2Service(Oauth2BridgeConfigService configService, HttpClientFactory httpClientFactory) {
-        this.configService = configService;
+    public Oauth2Service(SettingService settingService, HttpClientFactory httpClientFactory) {
+        this.settingService = settingService;
         this.httpClientFactory = httpClientFactory;
     }
 
@@ -33,14 +33,18 @@ public class Oauth2Service {
      * 校验token是否有效并获取用户信息
      */
     public Introspection introspection(String accessToken) throws IOException {
-        HttpClient client = httpClientFactory.createClient();
-        PostMethod postMethod = new PostMethod(configService.getConfig().getIntrospectionEndpoint());
+        HttpClient client = httpClientFactory.createClient(
+                settingService.getSetting().isInsecureSkipVerify(),
+                settingService.getSetting().getTrustCaCert(),
+                settingService.getSetting().getIntrospectionEndpoint()
+        );
+        PostMethod postMethod = new PostMethod(settingService.getSetting().getIntrospectionEndpoint());
         // 设置请求头（可选）
         postMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
         // 设置表单参数（核心）
         NameValuePair[] data = {
-                new NameValuePair("client_id", configService.getConfig().getClientId()),
-                new NameValuePair("client_secret", configService.getConfig().getClientSecret()),
+                new NameValuePair("client_id", settingService.getSetting().getClientId()),
+                new NameValuePair("client_secret", settingService.getSetting().getClientSecret()),
                 new NameValuePair("token", accessToken)
         };
         postMethod.setRequestBody(data);

@@ -5,7 +5,7 @@ import com.atlassian.jira.security.JiraAuthenticationContext;
 import com.atlassian.jira.user.ApplicationUser;
 import com.bes.jira.plugins.oauth2bridge.cache.TokenCache;
 import com.bes.jira.plugins.oauth2bridge.model.Introspection;
-import com.bes.jira.plugins.oauth2bridge.service.Oauth2BridgeConfigService;
+import com.bes.jira.plugins.oauth2bridge.service.SettingService;
 import com.bes.jira.plugins.oauth2bridge.service.Oauth2Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,23 +19,23 @@ import java.io.IOException;
 import java.security.InvalidParameterException;
 
 @Named
-public class Oauth2BridgeServletFilter implements Filter {
+public class ServletFilter implements Filter {
 
-    private static final Logger log = LoggerFactory.getLogger(Oauth2BridgeServletFilter.class);
+    private static final Logger log = LoggerFactory.getLogger(ServletFilter.class);
 
     private final Oauth2Service oauth2Service;
-    private final Oauth2BridgeConfigService oauth2BridgeConfigService;
+    private final SettingService settingService;
     private TokenCache tokenCache;
 
     @Inject
-    public Oauth2BridgeServletFilter(Oauth2Service oauth2Service, Oauth2BridgeConfigService oauth2BridgeConfigService) {
+    public ServletFilter(Oauth2Service oauth2Service, SettingService settingService) {
         this.oauth2Service = oauth2Service;
-        this.oauth2BridgeConfigService = oauth2BridgeConfigService;
+        this.settingService = settingService;
     }
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        this.tokenCache = new TokenCache(this.oauth2BridgeConfigService.getConfig().getSessionTimeoutSec());
+        this.tokenCache = new TokenCache(this.settingService.getSetting().getSessionTimeoutSec());
     }
 
     @Override
@@ -57,6 +57,11 @@ public class Oauth2BridgeServletFilter implements Filter {
             log.debug("<< [OAuth2 Filter] No Bearer token found. Bypassing authentication.");
             // 如果没有Bearer Token，直接放行，进入下一个 try/finally block
         } else {
+            log.debug(">> [OAuth2 Filter] Bearer token authentication.");
+            // 确认当前的tokenCache是否和配置一致，如果不一致，则需要重建缓存
+            if (settingService.getSetting().getSessionTimeoutSec() != tokenCache.getDuration()) {
+                tokenCache.rebuildCacheWithNewExpire(settingService.getSetting().getSessionTimeoutSec());
+            }
             // --- Bearer Token 流程开始 ---
             String accessToken = authHeader.substring("Bearer ".length());
             try {
@@ -101,7 +106,6 @@ public class Oauth2BridgeServletFilter implements Filter {
                 httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed: " + e.getMessage());
                 return; // 认证失败，中断请求链
             }
-            // --- Bearer Token 流程结束 ---
         }
 
         // --- 过滤器链执行和清理 ---

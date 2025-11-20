@@ -1,13 +1,11 @@
 package com.bes.jira.plugins.oauth2bridge.http.factory;
 
-import com.bes.jira.plugins.oauth2bridge.service.Oauth2BridgeConfigService;
 import com.bes.jira.plugins.oauth2bridge.socket.factory.CustomSSLSocketFactory;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.protocol.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import javax.inject.Named;
 import java.net.URL;
 
@@ -15,11 +13,7 @@ import java.net.URL;
 public class HttpClientFactory {
     private static final Logger log = LoggerFactory.getLogger(HttpClientFactory.class);
 
-    private final Oauth2BridgeConfigService oauth2BridgeConfigService;
-
-    @Inject
-    public HttpClientFactory(Oauth2BridgeConfigService oauth2BridgeConfigService) {
-        this.oauth2BridgeConfigService = oauth2BridgeConfigService;
+    public HttpClientFactory() {
     }
 
     /**
@@ -27,11 +21,7 @@ public class HttpClientFactory {
      *
      * @return 局部配置好的 HttpClient 实例
      */
-    public HttpClient createClient() {
-        boolean insecureSkipVerify = oauth2BridgeConfigService.getConfig().isInsecureSkipVerify();
-        String trustCaCert = oauth2BridgeConfigService.getConfig().getTrustCaCert();
-        String introspectionEndpoint = oauth2BridgeConfigService.getConfig().getIntrospectionEndpoint();
-
+    public HttpClient createClient(boolean insecureSkipVerify, String trustCaCert, String introspectionEndpoint) {
         // 1. 创建 HttpClient 实例
         HttpClient httpClient = new HttpClient();
 

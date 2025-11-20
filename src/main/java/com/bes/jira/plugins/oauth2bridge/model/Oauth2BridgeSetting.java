@@ -3,7 +3,7 @@ package com.bes.jira.plugins.oauth2bridge.model;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Oauth2BridgeConfig {
+public class Oauth2BridgeSetting {
     private String introspectionEndpoint;
     private String clientId;
     private String clientSecret;
@@ -11,7 +11,10 @@ public class Oauth2BridgeConfig {
     private String trustCaCert;
     private long sessionTimeoutSec;
 
-    public Oauth2BridgeConfig(String introspectionEndpoint, String clientId, String clientSecret, boolean insecureSkipVerify, String trustCaCert, long sessionTimeoutSec) {
+    public Oauth2BridgeSetting() {
+    }
+
+    public Oauth2BridgeSetting(String introspectionEndpoint, String clientId, String clientSecret, boolean insecureSkipVerify, String trustCaCert, long sessionTimeoutSec) {
         this.introspectionEndpoint = introspectionEndpoint;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
@@ -66,5 +69,17 @@ public class Oauth2BridgeConfig {
 
     public void setSessionTimeoutSec(long sessionTimeoutSec) {
         this.sessionTimeoutSec = sessionTimeoutSec;
+    }
+
+    @Override
+    public String toString() {
+        return "Oauth2BridgeSetting{" +
+                "introspectionEndpoint='" + introspectionEndpoint + '\'' +
+                ", clientId='" + clientId + '\'' +
+                ", clientSecret='" + clientSecret + '\'' +
+                ", insecureSkipVerify=" + insecureSkipVerify +
+                ", trustCaCert='" + trustCaCert + '\'' +
+                ", sessionTimeoutSec=" + sessionTimeoutSec +
+                '}';
     }
 }
