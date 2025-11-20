@@ -36,7 +36,7 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
         clientId = setting.getClientId();
         clientSecret = setting.getClientSecret();
         insecureSkipVerify = setting.isInsecureSkipVerify();
-        trustCaCert = setting.getIntrospectionEndpoint();
+        trustCaCert = setting.getTrustCaCert();
         sessionTimeoutSec = setting.getSessionTimeoutSec();
         log.debug("Loaded setting: {}", setting);
         return INPUT;

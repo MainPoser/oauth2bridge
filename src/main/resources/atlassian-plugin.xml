@@ -16,7 +16,7 @@
         <resource type="download" name="oauth2bridge.css" location="/css/oauth2bridge.css"/>
         <resource type="download" name="oauth2bridge.js" location="/js/oauth2bridge.js"/>
         <resource type="download" name="images/" location="/images"/>
-        <context>oauth2bridge</context>
+        <context>com.bes.jira.plugins.oauth2bridge</context>
     </web-resource>
     <web-section key="oauth2-bridge-section"
                  name="oauth2bridge Section"
