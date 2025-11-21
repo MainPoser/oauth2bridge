@@ -28,7 +28,7 @@ public class SettingService {
     private final String pluginKey;
 
     @Inject
-    public SettingService(@ComponentImport PluginSettingsFactory pluginSettingsFactory, @ComponentImport ModuleDescriptor<?> moduleDescriptor) {
+    public SettingService(@ComponentImport PluginSettingsFactory pluginSettingsFactory) {
         this.pluginSettings = pluginSettingsFactory.createGlobalSettings();
         this.pluginKey = "com.bes.jira.plugins.oauth2bridge.settings";
         // 插件启动时，从持久化存储加载初始配置并初始化 AtomicReference
@@ -60,14 +60,20 @@ public class SettingService {
         Object settingStr = pluginSettings.get(pluginKey);
         if (settingStr == null) {
             log.debug("Oauth2BridgeSetting is empty, use default.");
-            return new Oauth2BridgeSetting("", "", "", true, "", 30 * 60);
+            return new Oauth2BridgeSetting(
+                    "", "", "", "",
+                    "", "", true, "", 30 * 60
+            );
         }
         try {
             log.debug("Oauth2BridgeSetting str persistence is {}.", settingStr);
             return mapper.readValue((String) settingStr, Oauth2BridgeSetting.class);
         } catch (IOException e) {
             log.error("Parse Oauth2BridgeSetting Failed: {}, use default.", e.getMessage());
-            return new Oauth2BridgeSetting("", "", "", true, "", 30 * 60);
+            return new Oauth2BridgeSetting(
+                    "", "", "", "",
+                    "", "", true, "", 30 * 60
+            );
         }
 
     }

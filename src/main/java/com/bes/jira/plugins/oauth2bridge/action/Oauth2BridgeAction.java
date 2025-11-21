@@ -18,6 +18,9 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
     private final SettingService settingService;
 
     private String introspectionEndpoint;
+    private String baseEndpoint;
+    private String invokeEndpoint;
+    private String authorizeEndpoint;
     private String clientId;
     private String clientSecret;
     public boolean insecureSkipVerify;
@@ -47,9 +50,22 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
         if (this.command == null || this.command.isEmpty()) {
             return this.doDefault();
         }
-        log.debug("Saving setting: introspectionEndpoint={},clientId={},clientSecret={},insecureSkipVerify={},trustCaCert={},sessionTimeoutSec={}",
-                introspectionEndpoint, clientId, clientSecret, insecureSkipVerify, trustCaCert, sessionTimeoutSec);
-        Oauth2BridgeSetting oauth2BridgeSetting = new Oauth2BridgeSetting(introspectionEndpoint, clientId, clientSecret, insecureSkipVerify, trustCaCert, sessionTimeoutSec);
+        if (!baseEndpoint.isEmpty()) {
+            if (introspectionEndpoint.isEmpty()) {
+                introspectionEndpoint = baseEndpoint + "/introspection";
+            }
+            if (invokeEndpoint.isEmpty()) {
+                invokeEndpoint = baseEndpoint + "/invoke";
+            }
+            if (authorizeEndpoint.isEmpty()) {
+                authorizeEndpoint = baseEndpoint + "/authorize";
+            }
+        }
+        Oauth2BridgeSetting oauth2BridgeSetting = new Oauth2BridgeSetting(
+                introspectionEndpoint, baseEndpoint, invokeEndpoint, authorizeEndpoint,
+                clientId, clientSecret, insecureSkipVerify, trustCaCert, sessionTimeoutSec
+        );
+        log.debug("Saving setting: {}", oauth2BridgeSetting);
         settingService.updateSetting(oauth2BridgeSetting);
         return SUCCESS;
     }
@@ -60,6 +76,30 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
 
     public void setIntrospectionEndpoint(String introspectionEndpoint) {
         this.introspectionEndpoint = introspectionEndpoint;
+    }
+
+    public String getBaseEndpoint() {
+        return baseEndpoint;
+    }
+
+    public void setBaseEndpoint(String baseEndpoint) {
+        this.baseEndpoint = baseEndpoint;
+    }
+
+    public String getInvokeEndpoint() {
+        return invokeEndpoint;
+    }
+
+    public void setInvokeEndpoint(String invokeEndpoint) {
+        this.invokeEndpoint = invokeEndpoint;
+    }
+
+    public String getAuthorizeEndpoint() {
+        return authorizeEndpoint;
+    }
+
+    public void setAuthorizeEndpoint(String authorizeEndpoint) {
+        this.authorizeEndpoint = authorizeEndpoint;
     }
 
     public String getClientId() {

@@ -2,6 +2,7 @@ package com.bes.jira.plugins.oauth2bridge.service;
 
 import com.bes.jira.plugins.oauth2bridge.http.factory.HttpClientFactory;
 import com.bes.jira.plugins.oauth2bridge.model.Introspection;
+import com.bes.jira.plugins.oauth2bridge.model.IntrospectionResponse;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
@@ -39,7 +40,7 @@ public class Oauth2Service {
     /**
      * 校验token是否有效并获取用户信息
      */
-    public Introspection introspection(String accessToken) throws IOException {
+    public IntrospectionResponse introspection(String accessToken) throws IOException {
         CloseableHttpClient client = httpClientFactory.createClient(
                 settingService.getSetting().isInsecureSkipVerify(),
                 settingService.getSetting().getTrustCaCert()
@@ -59,7 +60,7 @@ public class Oauth2Service {
         String requestUrl = httpPost.getURI().toString();
         log.debug(">> [Introspection] Sending POST request to: {}", requestUrl);
         try (CloseableHttpResponse response = client.execute(httpPost)) {
-            int httpResponse = response.getStatusLine().getStatusCode();
+            int httpResponseStatus = response.getStatusLine().getStatusCode();
 
             // 2. 安全读取响应体 (替代原来的 IOUtils 逻辑)
             String responseBody = null;
@@ -71,33 +72,34 @@ public class Oauth2Service {
                     responseBody = EntityUtils.toString(entity, StandardCharsets.UTF_8);
                 } catch (IOException e) {
                     // 保持你原来的逻辑：记录错误但不中断，以便后续根据状态码处理
-                    log.warn("!! [Introspection] Failed to read response body for status {}: {}", httpResponse, e.getMessage());
+                    log.warn("!! [Introspection] Failed to read response body for status {}: {}", httpResponseStatus, e.getMessage());
                 }
             }
 
             // --- 失败路径：401 或 403 (认证失败) ---
-            if (httpResponse == 401 || httpResponse == 403) {
-                log.warn("!! [Introspection] Authorization server rejected token. Status: {}. Response body: {}", httpResponse, responseBody);
-                throw new InvalidParameterException("TOKEN_INVALID");
+            if (httpResponseStatus == 401 || httpResponseStatus == 403) {
+                log.warn("!! [Introspection] Authorization server rejected token. Status: {}. Response body: {}", httpResponseStatus, responseBody);
+                return new IntrospectionResponse(null, httpResponseStatus, "TOKEN_INVALID");
             }
 
             // --- 失败路径：非 200 且非 401/403 的其他 HTTP 错误 ---
-            if (httpResponse != 200) {
-                log.error("!! [Introspection] Request failed. Returned HTTP status: {}. Response body: {}", httpResponse, responseBody);
-                throw new IOException("Introspection returned HTTP status " + httpResponse);
+            if (httpResponseStatus != 200) {
+                log.error("!! [Introspection] Request failed. Returned HTTP status: {}. Response body: {}", httpResponseStatus, responseBody);
+                return new IntrospectionResponse(null, httpResponseStatus, responseBody);
             }
 
             // --- 成功路径：200 OK ---
             if (responseBody == null || responseBody.trim().isEmpty()) {
                 log.error("!! [Introspection] Successful status 200, but response body is empty!");
-                throw new IOException("Introspection succeeded (200), but response body was empty.");
+                return new IntrospectionResponse(null, httpResponseStatus, "Response body empty");
             }
 
             // 成功时打印响应体摘要
             log.debug("<< [Introspection] SUCCESS 200. Response body summary: {}", responseBody);
 
-            // 反序列化
-            return mapper.readValue(responseBody, Introspection.class);
+            Introspection introspection = mapper.readValue(responseBody, Introspection.class);
+            log.debug("<< [Introspection] SUCCESS 200. Response body summary: {}", responseBody);
+            return new IntrospectionResponse(introspection, httpResponseStatus, null);
         } catch (IOException e) {
             // 捕获 HTTP 客户端执行错误或 JSON/IO 错误
             log.error("!! [Introspection] Fatal I/O or JSON parsing error during request to {}: {}", requestUrl, e.getMessage(), e);

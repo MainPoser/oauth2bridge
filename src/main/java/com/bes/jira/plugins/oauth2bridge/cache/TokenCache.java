@@ -4,13 +4,18 @@ import com.atlassian.jira.user.ApplicationUser;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
+import javax.inject.Named;
 import java.util.concurrent.TimeUnit;
 
+@Named
 public class TokenCache {
     private Cache<String, ApplicationUser> cache;
     private long duration;
 
-    public TokenCache(long duration) {
+    public TokenCache() {
+    }
+
+    public void init(long duration) {
         if (duration <= 0) {
             duration = 30 * 60;
         }
@@ -30,6 +35,10 @@ public class TokenCache {
 
     public long getDuration() {
         return duration;
+    }
+
+    public void invalidate(String token) {
+        cache.invalidate(token);
     }
 
     // 当需要修改过期时间时：

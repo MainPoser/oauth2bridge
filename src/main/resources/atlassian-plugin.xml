@@ -46,6 +46,18 @@
                     class="com.bes.jira.plugins.oauth2bridge.servlet.filter.ServletFilter"
                     location="before-dispatch">
         <description>OAuth2Bridge Servlet Filter Plugin</description>
+        <init-param>
+            <param-name>excludePatterns</param-name>
+            <param-value>
+                <![CDATA[^/rest/[^/]+/oauth2bridge/[^/]+.*]]>
+            </param-value>
+        </init-param>
         <url-pattern>/rest/*</url-pattern>
     </servlet-filter>
+    <rest key="oauth2bridge-rest"
+          name="oauth2bridge Rest"
+          path="/oauth2bridge"
+          version="1.0">
+        <description>Provides oauth2 services.</description>
+    </rest>
 </atlassian-plugin>
