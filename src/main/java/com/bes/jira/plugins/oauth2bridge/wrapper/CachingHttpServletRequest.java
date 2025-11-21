@@ -16,10 +16,7 @@ public class CachingHttpServletRequest extends HttpServletRequestWrapper {
         super(request);
 
         // 1. 读取原始请求的输入流，并缓存为字节数组
-        try (
-                InputStream is = request.getInputStream();
-        ) {
-
+        try (InputStream is = request.getInputStream();) {
             this.cachedBody = IOUtils.toByteArray(is);
         }
     }

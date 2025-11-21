@@ -8,6 +8,7 @@ import com.bes.jira.plugins.oauth2bridge.model.Introspection;
 import com.bes.jira.plugins.oauth2bridge.model.IntrospectionResponse;
 import com.bes.jira.plugins.oauth2bridge.service.SettingService;
 import com.bes.jira.plugins.oauth2bridge.service.Oauth2Service;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,15 +54,22 @@ public class ServletFilter implements Filter {
                     try {
                         Pattern p = Pattern.compile(regex);
                         excludePatterns.add(p);
+                        // INFO: 记录加载的排除模式
                         log.info("[OAuth2 Filter] Loaded exclude pattern: {}", regex);
                     } catch (Exception e) {
+                        // ERROR: 记录无效的正则表达式
                         log.error("[OAuth2 Filter] Invalid regex: {}", regex, e);
                     }
                 }
             }
         }
+        // INFO: 记录总数
         log.info("[OAuth2 Filter] Total exclude patterns loaded: {}", excludePatterns.size());
-        this.tokenCache.init(this.settingService.getSetting().getSessionTimeoutSec());
+
+        // 初始化缓存
+        long sessionTimeoutSec = this.settingService.getSetting().getSessionTimeoutSec();
+        this.tokenCache.init(sessionTimeoutSec);
+        log.info("[OAuth2 Filter] TokenCache initialized with session timeout: {} seconds.", sessionTimeoutSec);
     }
 
     @Override
@@ -80,6 +88,7 @@ public class ServletFilter implements Filter {
             Matcher matcher = excludePattern.matcher(httpRequest.getServletPath());
             if (matcher.find()) {
                 excludeMatched = true;
+                log.debug("[OAuth2 Filter] Path {} matched exclude pattern: {}", path, excludePattern.pattern());
                 break;
             }
         }
@@ -87,23 +96,29 @@ public class ServletFilter implements Filter {
         String authHeader = httpRequest.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ") || excludeMatched) {
-            log.debug("<< [OAuth2 Filter] No Bearer token found or exclude. Bypassing authentication.");
+            log.debug("<< [OAuth2 Filter] No Bearer token found, exclude matched ({}), or no Bearer prefix. Bypassing authentication.", excludeMatched);
             // 如果没有Bearer Token，直接放行，进入下一个 try/finally block
         } else {
-            log.debug(">> [OAuth2 Filter] Bearer token authentication.");
-            // 确认当前的tokenCache是否和配置一致，如果不一致，则需要重建缓存
-            if (settingService.getSetting().getSessionTimeoutSec() != tokenCache.getDuration()) {
-                tokenCache.rebuildCacheWithNewExpire(settingService.getSetting().getSessionTimeoutSec());
-            }
             // --- Bearer Token 流程开始 ---
             String accessToken = authHeader.substring("Bearer ".length());
+            String maskedToken = StringUtils.left(accessToken, 8) + "..."; // 关键：脱敏
+
+            log.debug(">> [OAuth2 Filter] Bearer token authentication initiated. Masked Token: {}", maskedToken);
+
+            // 确认当前的tokenCache是否和配置一致，如果不一致，则需要重建缓存
+            long currentTimeout = settingService.getSetting().getSessionTimeoutSec();
+            if (currentTimeout != tokenCache.getDuration()) {
+                // INFO: 记录缓存重建动作
+                log.info("[OAuth2 Filter] TokenCache duration changed from {}s to {}s. Rebuilding cache.", tokenCache.getDuration(), currentTimeout);
+                tokenCache.rebuildCacheWithNewExpire(currentTimeout);
+            }
             try {
                 // 1. 尝试在缓存查找
                 userToSet = tokenCache.get(accessToken);
                 if (userToSet != null) {
-                    log.debug(">> [Cache HIT] Token found in cache for user: {}", userToSet.getName());
+                    log.debug(">> [Cache HIT] Token {} found in cache for user: {}", maskedToken, userToSet.getName());
                 } else {
-                    log.debug(">> [Cache MISS] Token not found in cache. Proceeding to remote introspection.");
+                    log.debug(">> [Cache MISS] Token {} not found in cache. Proceeding to remote introspection.", maskedToken);
 
                     // 缓存找不到再去oauth2服务器获取
                     IntrospectionResponse introspectionRes = oauth2Service.introspection(accessToken);
@@ -111,19 +126,26 @@ public class ServletFilter implements Filter {
                         // 正常处理 Introspection
                         Introspection introspection = introspectionRes.getIntrospection();
                         // 增强: 打印Introspection的关键信息
-                        log.debug(">> [Introspection] Sub: {}, Active: {}", introspection.getSub(), introspection.isActive());
+                        log.debug(">> [Introspection SUCCESS] Sub: {}, Active: {}", introspection.getSub(), introspection.isActive());
 
-                        userToSet = ComponentAccessor.getUserManager().getUserByName(introspection.getSub());
-                        if (userToSet == null) {
-                            log.warn("!! [User Lookup] User '{}' from Introspection not found in Jira user manager.", introspection.getSub());
+                        // JIRA 用户查找
+                        ApplicationUser tempUser = ComponentAccessor.getUserManager().getUserByName(introspection.getSub());
+
+                        if (tempUser == null) {
+                            // WARN: 用户的 Sub 存在，但 JIRA 不认识
+                            log.warn("!! [User Lookup FAILED] User '{}' from Introspection (Token: {}) not found in Jira user manager.",
+                                    introspection.getSub(), maskedToken);
                             httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "User not found in Jira");
                             return; // 认证失败，中断请求链
                         }
+                        userToSet = tempUser; // 设置最终的用户
 
-                        log.debug(">> [User Lookup SUCCESS] Found Jira user: {}. Caching token.", userToSet.getName());
+                        log.info(">> [User Lookup SUCCESS] Found Jira user: {}. Caching token {}.", userToSet.getName(), maskedToken);
                         tokenCache.put(accessToken, userToSet);
                     } else {
-                        log.error("<< [Introspection] failed. Status: {}, Error: {}", introspectionRes.getStatusCode(), introspectionRes.getErrorMessage());
+                        // ERROR: Introspection 远程失败
+                        log.error("<< [Introspection FAILED] Remote validation failed (Status: {}, Error: {}). Masked Token: {}.",
+                                introspectionRes.getStatusCode(), introspectionRes.getErrorMessage(), maskedToken);
                         httpResponse.sendError(introspectionRes.getStatusCode(), introspectionRes.getErrorMessage());
                         return; // 认证失败，中断请求链
                     }
@@ -133,11 +155,21 @@ public class ServletFilter implements Filter {
                 log.debug(">> [Context Set] Setting user '{}' to JiraAuthenticationContext.", userToSet.getName());
                 authContext.setLoggedInUser(userToSet);
 
-            } catch (InvalidParameterException | URISyntaxException e) {
-                // token无效等情况，认证失败
-                log.info("!! [Auth Failed] Bearer token exception: {}", e.getMessage());
-                httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed: " + e.getMessage());
+            } catch (InvalidParameterException e) {
+                // WARN: token 格式无效等情况，认证失败
+                log.warn("!! [Auth Failed] Invalid Bearer token format/parameter. Masked Token: {}. Error: {}", maskedToken, e.getMessage());
+                httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed: Invalid token parameter");
                 return; // 认证失败，中断请求链
+            } catch (URISyntaxException e) {
+                // ERROR: 配置中的 URL 导致无法执行请求
+                log.error("!! [Auth Failed] Configuration error: Introspection URL is invalid. Masked Token: {}.", maskedToken, e);
+                httpResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Authentication internal error: Configuration issue");
+                return;
+            } catch (IOException e) {
+                // ERROR: 网络 I/O 错误
+                log.error("!! [Auth Failed] Network/I/O error during introspection. Masked Token: {}.", maskedToken, e);
+                httpResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Authentication internal error: Network issue");
+                return;
             }
         }
 
@@ -150,11 +182,12 @@ public class ServletFilter implements Filter {
             // 4. 【关键修正】如果我们在上面设置了用户，请求完成后必须清理！
             if (userToSet != null && authContext != null) {
                 // 避免清空其他过滤器设置的用户，只清理自己设置的
-                if (authContext.getLoggedInUser() != null && authContext.getLoggedInUser().equals(userToSet)) {
+                ApplicationUser currentUser = authContext.getLoggedInUser();
+                if (currentUser != null && currentUser.equals(userToSet)) {
                     authContext.clearLoggedInUser();
                     log.debug("<< [Context Clear] Cleared user '{}' from JiraAuthenticationContext.", userToSet.getName());
-                } else if (authContext.getLoggedInUser() != null) {
-                    log.debug("<< [Context Skipped] Did not clear user '{}' as it was changed by downstream filters.", authContext.getLoggedInUser().getName());
+                } else if (currentUser != null) {
+                    log.debug("<< [Context Skipped] Did not clear user '{}' as it was changed by downstream filters.", currentUser.getName());
                 } else {
                     log.debug("<< [Context Skipped] Context was already cleared by downstream filters.");
                 }
@@ -165,5 +198,6 @@ public class ServletFilter implements Filter {
 
     @Override
     public void destroy() {
+        log.info("[OAuth2 Filter] Filter destroyed.");
     }
 }

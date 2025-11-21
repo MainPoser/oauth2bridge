@@ -1,5 +1,6 @@
 package com.bes.jira.plugins.oauth2bridge.http.factory;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -41,6 +42,11 @@ public class HttpClientFactory {
      * @return 局部配置好的 HttpClient 实例
      */
     public CloseableHttpClient createClient(boolean insecureSkipVerify, String trustCaCert) {
+        // DEBUG: 记录请求策略，帮助开发排查配置优先级问题
+        if (log.isDebugEnabled()) {
+            log.debug("Requesting HttpClient. Strategy: InsecureSkipVerify={}, HasCustomCert={}",
+                    insecureSkipVerify, StringUtils.isNotBlank(trustCaCert));
+        }
         // 优先级 1: 如果要求跳过验证，返回 InsecureClient
         if (insecureSkipVerify) {
             return getInsecureClient();
@@ -64,7 +70,7 @@ public class HttpClientFactory {
         }
         synchronized (lock) {
             if (standardClient == null) {
-                log.info("Initializing Standard HttpClient");
+                log.info("Initializing Standard HttpClient (System Default SSL).");
                 standardClient = createInternal(false, null);
             }
             return standardClient;
@@ -80,7 +86,7 @@ public class HttpClientFactory {
         }
         synchronized (lock) {
             if (insecureClient == null) {
-                log.info("Initializing Insecure HttpClient (Skip Verify)");
+                log.info("Initializing Insecure HttpClient (Skip Verify enabled). Security warning: SSL validation is disabled.");
                 insecureClient = createInternal(true, null);
             }
             return insecureClient;
@@ -107,18 +113,17 @@ public class HttpClientFactory {
             String logMessage;
 
             if (oldClient != null) {
-                logMessage = "Custom Certificate changed. Attempting to create new Custom HttpClient.";
+                log.info("Configuration change detected: Custom Certificate content has changed. Re-initializing HttpClient.");
             } else {
-                logMessage = "Initializing Custom HttpClient with provided certificate.";
+                log.info("Initializing Custom HttpClient with provided Trusted Certificate.");
             }
-            log.info(logMessage);
 
             try {
                 // 创建新的
                 CloseableHttpClient newClient = createInternal(false, trustCaCert);
                 // 创建成功后，才关闭旧的客户端
                 if (oldClient != null) {
-                    log.info("Successfully created new Custom HttpClient. Closing previous one.");
+                    log.info("Successfully initialized new Custom HttpClient. Closing the old instance.");
                     closeClient(oldClient); // 关闭旧的
                 }
                 // 6. 更新全局变量为新的客户端实例
@@ -127,7 +132,7 @@ public class HttpClientFactory {
                 cachedCustomCertContent = trustCaCert;
                 return customClient;
             } catch (Exception e) {
-                log.error("Failed to create custom http client. Existing client remains operational if it was initialized.", e);
+                log.error("Failed to initialize Custom HttpClient. The system will continue using the previous client if available.", e);
                 // 保留抛出异常的逻辑，确保上层调用者知道客户端初始化失败
                 throw new RuntimeException(e);
             }
@@ -144,6 +149,7 @@ public class HttpClientFactory {
 
             if (insecureSkipVerify) {
                 // Insecure 模式
+                log.debug("Building SSLContext with Trust-All strategy.");
                 sslContext = SSLContexts.custom()
                         .loadTrustMaterial(null, (chain, authType) -> true)
                         .build();
@@ -151,6 +157,7 @@ public class HttpClientFactory {
 
             } else if (!trustCaCert.isEmpty()) {
                 // Custom Cert 模式
+                log.debug("Building SSLContext with Custom TrustStore.");
                 KeyStore trustStore = createTrustStoreWithCert(trustCaCert);
                 sslContext = SSLContexts.custom()
                         .loadTrustMaterial(trustStore, null)
@@ -159,6 +166,7 @@ public class HttpClientFactory {
 
             } else {
                 // Standard 模式
+                log.debug("Building SSLContext with System Default.");
                 sslContext = SSLContexts.createSystemDefault();
                 sslSocketFactory = new SSLConnectionSocketFactory(sslContext);
             }
@@ -170,26 +178,40 @@ public class HttpClientFactory {
                     .build();
 
         } catch (Exception e) {
+            log.error("Error building SSLContext or HttpClient: {}", e.getMessage());
             throw new RuntimeException("Failed to create HttpClient", e);
         }
     }
 
     private KeyStore createTrustStoreWithCert(String certString) throws Exception {
-        KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keyStore.load(null, null);
-        CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-        ByteArrayInputStream certInputStream = new ByteArrayInputStream(certString.getBytes(StandardCharsets.UTF_8));
-        X509Certificate certificate = (X509Certificate) certFactory.generateCertificate(certInputStream);
-        keyStore.setCertificateEntry("custom-ca", certificate);
-        return keyStore;
+        try {
+            KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            keyStore.load(null, null);
+            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+            ByteArrayInputStream certInputStream = new ByteArrayInputStream(certString.getBytes(StandardCharsets.UTF_8));
+            X509Certificate certificate = (X509Certificate) certFactory.generateCertificate(certInputStream);
+
+            // DEBUG: 这里的关键是打印证书的主题（Subject），而不是打印证书内容。
+            // 这样可以确认加载的是哪张证书，且不会泄露太多信息或刷屏。
+            if (log.isDebugEnabled()) {
+                log.debug("Loaded Custom Certificate. Subject DN: {}", certificate.getSubjectX500Principal());
+            }
+
+            keyStore.setCertificateEntry("custom-ca", certificate);
+            return keyStore;
+        } catch (Exception e) {
+            log.error("Failed to parse the provided Custom Certificate string.", e);
+            throw e;
+        }
     }
 
     private void closeClient(CloseableHttpClient client) {
         if (client != null) {
             try {
                 client.close();
+                log.debug("HttpClient instance closed successfully.");
             } catch (IOException e) {
-                log.warn("Error closing HttpClient", e);
+                log.warn("Error closing HttpClient resource.", e);
             }
         }
     }
@@ -198,6 +220,7 @@ public class HttpClientFactory {
      * 插件卸载时调用，清理所有资源
      */
     public void destroy() {
+        log.info("Destroying HttpClientFactory. Closing all cached clients.");
         synchronized (lock) {
             closeClient(standardClient);
             closeClient(insecureClient);
