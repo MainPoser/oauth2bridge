@@ -17,6 +17,7 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
@@ -112,13 +113,6 @@ public class ServletFilter implements Filter {
                         // 增强: 打印Introspection的关键信息
                         log.debug(">> [Introspection] Sub: {}, Active: {}", introspection.getSub(), introspection.isActive());
 
-                        // 校验 token active 状态
-                        if (!introspection.isActive()) {
-                            log.warn("!! [Introspection] Token is marked as inactive or expired.");
-                            httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token is inactive or expired.");
-                            return; // 认证失败，中断请求链
-                        }
-
                         userToSet = ComponentAccessor.getUserManager().getUserByName(introspection.getSub());
                         if (userToSet == null) {
                             log.warn("!! [User Lookup] User '{}' from Introspection not found in Jira user manager.", introspection.getSub());
@@ -139,7 +133,7 @@ public class ServletFilter implements Filter {
                 log.debug(">> [Context Set] Setting user '{}' to JiraAuthenticationContext.", userToSet.getName());
                 authContext.setLoggedInUser(userToSet);
 
-            } catch (InvalidParameterException e) {
+            } catch (InvalidParameterException | URISyntaxException e) {
                 // token无效等情况，认证失败
                 log.info("!! [Auth Failed] Bearer token exception: {}", e.getMessage());
                 httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed: " + e.getMessage());

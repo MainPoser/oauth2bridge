@@ -55,10 +55,10 @@ public class Oauth {
         return Response.seeOther(uri).build();
     }
 
-    @Path("invoke")
+    @Path("revoke")
     @POST
-    public void invoke(@Context HttpServletRequest request, @Context HttpServletResponse response) {
-        log.debug("Request invoke, do local and proxy to remote oauth2");
+    public void revoke(@Context HttpServletRequest request, @Context HttpServletResponse response) {
+        log.debug("Request revoke, do local and proxy to remote oauth2");
         CachingHttpServletRequest wrappedRequest;
         try {
             // 1. **创建包装器**：在这一步，原始请求体被读取并缓存。
@@ -96,7 +96,7 @@ public class Oauth {
         if (!queryAccessToken.isEmpty()) {
             tokenCache.invalidate(queryAccessToken);
         }
-        if (!formParams.get("token").isEmpty()) {
+        if (formParams.get("token") != null && !formParams.get("token").isEmpty()) {
             tokenCache.invalidate(formParams.get("token"));
         }
         forwardRequest(wrappedRequest, response, settingService.getSetting().getInvokeEndpoint());
@@ -180,10 +180,10 @@ public class Oauth {
                     proxyRequest.addHeader(name, request.getHeader(name));
                 }
             }
-
+            log.debug("Forward proxyRequest: {}", proxyRequest);
             // 执行请求
             try (CloseableHttpResponse remoteResponse = httpClient.execute(proxyRequest)) {
-                log.debug("Forward remoteResponse: {}", remoteResponse.getStatusLine());
+                log.debug("Forward proxyResponse: {}", remoteResponse.getStatusLine());
 
                 // 设置状态码
                 response.setStatus(remoteResponse.getStatusLine().getStatusCode());
@@ -194,9 +194,8 @@ public class Oauth {
                     if (!"transfer-encoding".equalsIgnoreCase(name) &&
                             !"content-length".equalsIgnoreCase(name) &&
                             !"set-cookie".equalsIgnoreCase(name) && // 仍然建议过滤，防止干扰
-                            !"connection".equalsIgnoreCase(name)
-                    ) { // <--- 必须过滤！交给 Tomcat 处理连接状态
-                        log.debug("response header {}={}", name, h.getValue());
+                            !"connection".equalsIgnoreCase(name) // <--- 必须过滤！交给 Tomcat 处理连接状态
+                    ) {
                         response.setHeader(h.getName(), h.getValue());
                     }
                 }

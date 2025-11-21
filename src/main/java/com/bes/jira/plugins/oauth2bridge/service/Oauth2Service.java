@@ -5,10 +5,12 @@ import com.bes.jira.plugins.oauth2bridge.model.Introspection;
 import com.bes.jira.plugins.oauth2bridge.model.IntrospectionResponse;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
@@ -18,9 +20,12 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Named;
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 @Named
@@ -40,25 +45,24 @@ public class Oauth2Service {
     /**
      * 校验token是否有效并获取用户信息
      */
-    public IntrospectionResponse introspection(String accessToken) throws IOException {
+    public IntrospectionResponse introspection(String accessToken) throws IOException, URISyntaxException {
         CloseableHttpClient client = httpClientFactory.createClient(
                 settingService.getSetting().isInsecureSkipVerify(),
                 settingService.getSetting().getTrustCaCert()
         );
-        // 1. 创建 HttpPost 对象
-        HttpPost httpPost = new HttpPost(settingService.getSetting().getIntrospectionEndpoint());
-
-        // 2. 准备表单参数 (注意：这里使用 List 替代了 3.x 的数组)
-        List<NameValuePair> params = new ArrayList<>();
-        params.add(new BasicNameValuePair("client_id", settingService.getSetting().getClientId()));
-        params.add(new BasicNameValuePair("client_secret", settingService.getSetting().getClientSecret()));
-        params.add(new BasicNameValuePair("token", accessToken));
-
-        // 3. 将参数封装为 Entity 并设置编码
-        // UrlEncodedFormEntity 会自动将 Content-Type 设置为 application/x-www-form-urlencoded
-        httpPost.setEntity(new UrlEncodedFormEntity(params, StandardCharsets.UTF_8));
-        String requestUrl = httpPost.getURI().toString();
-        log.debug(">> [Introspection] Sending POST request to: {}", requestUrl);
+        // 使用目标 URL 创建 Builder
+        URIBuilder uriBuilder = new URIBuilder(settingService.getSetting().getIntrospectionEndpoint());
+        // 添加参数 (会自动处理 URL 编码)
+        uriBuilder.addParameter("token", accessToken);
+        URI build = uriBuilder.build();
+        HttpPost httpPost = new HttpPost(build);
+        // 拼接 "username:password"
+        String auth = settingService.getSetting().getClientId() + ":" + settingService.getSetting().getClientSecret();
+        // Base64 编码
+        String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
+        // 设置 Authorization 头
+        httpPost.setHeader(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth);
+        log.debug(">> [Introspection] Sending POST request to: {}", build.toString());
         try (CloseableHttpResponse response = client.execute(httpPost)) {
             int httpResponseStatus = response.getStatusLine().getStatusCode();
 
@@ -96,16 +100,12 @@ public class Oauth2Service {
 
             // 成功时打印响应体摘要
             log.debug("<< [Introspection] SUCCESS 200. Response body summary: {}", responseBody);
-
             Introspection introspection = mapper.readValue(responseBody, Introspection.class);
-            log.debug("<< [Introspection] SUCCESS 200. Response body summary: {}", responseBody);
             return new IntrospectionResponse(introspection, httpResponseStatus, null);
         } catch (IOException e) {
             // 捕获 HTTP 客户端执行错误或 JSON/IO 错误
-            log.error("!! [Introspection] Fatal I/O or JSON parsing error during request to {}: {}", requestUrl, e.getMessage(), e);
+            log.error("!! [Introspection] Fatal I/O or JSON parsing error during request: {}", e.getMessage(), e);
             throw e; // 重新抛出，让上层调用者处理
-        } finally {
-            log.debug("<< [Introspection] Releasing connection for request to: {}", requestUrl);
         }
     }
 }
