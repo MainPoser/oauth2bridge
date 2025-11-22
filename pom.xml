@@ -6,10 +6,10 @@
     <artifactId>oauth2bridge</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <organization>
-        <name>Example Company</name>
-        <url>http://www.example.com/</url>
+        <name>BES Company</name>
+        <url>https://www.bessystem.com/</url>
     </organization>
-    <name>oauth2bridge</name>
+    <name>Oauth2Bridge</name>
     <description>This is the com.bes.jira.plugins:oauth2bridge plugin for Atlassian JIRA.</description>
     <packaging>atlassian-plugin</packaging>
     <dependencies>

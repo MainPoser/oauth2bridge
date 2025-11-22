@@ -17,14 +17,10 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.InvalidParameterException;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
 
 @Named
 public class Oauth2ServletFilter implements Filter {

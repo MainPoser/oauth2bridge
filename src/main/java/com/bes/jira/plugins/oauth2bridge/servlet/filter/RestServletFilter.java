@@ -1,14 +1,8 @@
 package com.bes.jira.plugins.oauth2bridge.servlet.filter;
 
-import com.atlassian.jira.component.ComponentAccessor;
-import com.atlassian.jira.security.JiraAuthenticationContext;
-import com.atlassian.jira.user.ApplicationUser;
 import com.bes.jira.plugins.oauth2bridge.cache.TokenCache;
-import com.bes.jira.plugins.oauth2bridge.model.Introspection;
-import com.bes.jira.plugins.oauth2bridge.model.IntrospectionResponse;
 import com.bes.jira.plugins.oauth2bridge.service.Oauth2Service;
 import com.bes.jira.plugins.oauth2bridge.service.SettingService;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,10 +12,7 @@ import javax.inject.Named;
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.security.InvalidParameterException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -31,13 +22,11 @@ public class RestServletFilter implements Filter {
 
     private static final Logger log = LoggerFactory.getLogger(RestServletFilter.class);
 
-    private final Oauth2Service oauth2Service;
     private final SettingService settingService;
     private final TokenCache tokenCache;
 
     @Inject
-    public RestServletFilter(Oauth2Service oauth2Service, SettingService settingService, TokenCache tokenCache) {
-        this.oauth2Service = oauth2Service;
+    public RestServletFilter(SettingService settingService, TokenCache tokenCache) {
         this.settingService = settingService;
         this.tokenCache = tokenCache;
     }
