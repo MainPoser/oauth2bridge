@@ -31,7 +31,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-@Path("/oauth")
+@Path("/")
 @AnonymousAllowed
 public class Oauth {
     private static final Logger log = LoggerFactory.getLogger(Oauth.class);
@@ -47,7 +47,7 @@ public class Oauth {
     }
 
     @GET
-    @Path("authorize")
+    @Path("oauth/authorize")
     @Produces(MediaType.WILDCARD)
     public Response authorize(@Context HttpServletRequest request) {
         // INFO: 记录关键的跳转行为
@@ -59,8 +59,8 @@ public class Oauth {
         return Response.seeOther(uri).build();
     }
 
-    @Path("revoke")
     @POST
+    @Path("oauth/revoke")
     public void revoke(@Context HttpServletRequest request, @Context HttpServletResponse response) {
         log.info("Processing token revoke request.");
         CachingHttpServletRequest wrappedRequest;
@@ -116,6 +116,19 @@ public class Oauth {
         forwardRequest(wrappedRequest, response, settingService.getSetting().getInvokeEndpoint());
     }
 
+    @POST
+    @Path("oauth/test")
+    public void test(@Context HttpServletRequest request, @Context HttpServletResponse response) {
+        log.info("Processing test request.");
+    }
+
+    @GET
+    @Path("oauth/test")
+    public Response getTest(@Context HttpServletRequest request, @Context HttpServletResponse response) {
+        log.info("Processing getTest request.");
+        return Response.ok().build();
+    }
+
     // --- 代理 POST 请求 ---
     @POST
     @Path("{subPath: .*}") // 使用正则表达式捕获所有剩余路径
@@ -150,28 +163,39 @@ public class Oauth {
                 settingService.getSetting().isInsecureSkipVerify(),
                 settingService.getSetting().getTrustCaCert()
         );
+        // 【新增逻辑】处理查询参数
+        String queryString = request.getQueryString();
+        String finalTargetUrl = targetUrl;
 
-        log.debug("Starting proxy to target URL: {}", targetUrl);
-        log.debug("Starting proxy to target URL: {}", targetUrl);
+        if (StringUtils.isNotBlank(queryString)) {
+            // 如果 targetUrl 已经包含查询参数（即 ?），则使用 & 连接；否则使用 ? 连接。
+            if (targetUrl.contains("?")) {
+                finalTargetUrl = targetUrl + "&" + queryString;
+            } else {
+                finalTargetUrl = targetUrl + "?" + queryString;
+            }
+            log.debug("Appending query string. Final target URL: {}", finalTargetUrl);
+        }
+        log.debug("Starting proxy to target URL: {}", finalTargetUrl);
         try {
             // 创建请求对象
             HttpRequestBase proxyRequest;
             String method = request.getMethod().toUpperCase();
             switch (method) {
                 case "POST":
-                    proxyRequest = new HttpPost(targetUrl);
+                    proxyRequest = new HttpPost(finalTargetUrl);
                     break;
                 case "PUT":
-                    proxyRequest = new HttpPut(targetUrl);
+                    proxyRequest = new HttpPut(finalTargetUrl);
                     break;
                 case "PATCH":
-                    proxyRequest = new HttpPatch(targetUrl);
+                    proxyRequest = new HttpPatch(finalTargetUrl);
                     break;
                 case "DELETE":
-                    proxyRequest = new HttpDelete(targetUrl);
+                    proxyRequest = new HttpDelete(finalTargetUrl);
                     break;
                 default:
-                    proxyRequest = new HttpGet(targetUrl);
+                    proxyRequest = new HttpGet(finalTargetUrl);
                     break;
             }
             log.debug("Created Http Request object for method: {}", method);
@@ -195,7 +219,6 @@ public class Oauth {
                     }
                     entityRequest.setEntity(new UrlEncodedFormEntity(formParams, StandardCharsets.UTF_8));
                     log.debug("Set form-urlencoded entity with {} parameters.", formParams.size());
-
                 } else if (contentLength > 0) {
                     // 使用缓存的输入流
                     InputStreamEntity entity = new InputStreamEntity(request.getInputStream(), contentLength);
@@ -213,6 +236,12 @@ public class Oauth {
                     proxyRequest.addHeader(name, request.getHeader(name));
                     log.trace("Copying request header: {} = {}", name, request.getHeader(name)); // TRACE 级别用于记录所有 Header
                 }
+            }
+            // 如果有之前连接器捕获的Basic认证则放进去
+            String originalAuthHeader = (String) request.getAttribute("OriginalAuthorizationHeader");
+            if (StringUtils.isNotBlank(originalAuthHeader)) {
+                log.debug("Set Request OriginalAuthorizationHeader: {}", originalAuthHeader);
+                proxyRequest.addHeader(HttpHeaders.AUTHORIZATION, originalAuthHeader);
             }
             // 执行请求
             log.debug("Executing proxy request to remote server...");
@@ -232,7 +261,7 @@ public class Oauth {
                     ) {
                         response.setHeader(h.getName(), h.getValue());
                         log.trace("Copying response header: {} = {}", name, h.getValue()); // TRACE 级别用于记录所有 Header
-                    }else {
+                    } else {
                         log.trace("Skipping response header: {}", name);
                     }
                 }

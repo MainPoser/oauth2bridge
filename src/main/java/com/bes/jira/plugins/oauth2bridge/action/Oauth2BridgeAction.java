@@ -76,15 +76,15 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
         if (StringUtils.isNotBlank(baseEndpoint)) {
             boolean changed = false;
             if (StringUtils.isBlank(introspectionEndpoint)) {
-                introspectionEndpoint = baseEndpoint + "/introspection";
+                introspectionEndpoint = baseEndpoint + "/oauth/introspection";
                 changed = true;
             }
             if (StringUtils.isBlank(invokeEndpoint)) {
-                invokeEndpoint = baseEndpoint + "/revoke";
+                invokeEndpoint = baseEndpoint + "oauth/revoke";
                 changed = true;
             }
             if (StringUtils.isBlank(authorizeEndpoint)) {
-                authorizeEndpoint = baseEndpoint + "/authorize";
+                authorizeEndpoint = baseEndpoint + "oauth/authorize";
                 changed = true;
             }
 

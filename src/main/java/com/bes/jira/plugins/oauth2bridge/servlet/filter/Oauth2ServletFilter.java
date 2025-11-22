@@ -9,6 +9,7 @@ import com.bes.jira.plugins.oauth2bridge.model.IntrospectionResponse;
 import com.bes.jira.plugins.oauth2bridge.service.SettingService;
 import com.bes.jira.plugins.oauth2bridge.service.Oauth2Service;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,28 +17,26 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.InvalidParameterException;
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Named
-public class ServletFilter implements Filter {
+public class Oauth2ServletFilter implements Filter {
 
-    private static final Logger log = LoggerFactory.getLogger(ServletFilter.class);
-
-    private List<Pattern> excludePatterns = new ArrayList<>();
+    private static final Logger log = LoggerFactory.getLogger(Oauth2ServletFilter.class);
 
     private final Oauth2Service oauth2Service;
     private final SettingService settingService;
     private final TokenCache tokenCache;
 
     @Inject
-    public ServletFilter(Oauth2Service oauth2Service, SettingService settingService, TokenCache tokenCache) {
+    public Oauth2ServletFilter(Oauth2Service oauth2Service, SettingService settingService, TokenCache tokenCache) {
         this.oauth2Service = oauth2Service;
         this.settingService = settingService;
         this.tokenCache = tokenCache;
@@ -45,27 +44,6 @@ public class ServletFilter implements Filter {
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        String patternStr = filterConfig.getInitParameter("excludePatterns");
-        if (patternStr != null && !patternStr.trim().isEmpty()) {
-            String[] parts = patternStr.split(",");
-            for (String part : parts) {
-                String regex = part.trim();
-                if (!regex.isEmpty()) {
-                    try {
-                        Pattern p = Pattern.compile(regex);
-                        excludePatterns.add(p);
-                        // INFO: 记录加载的排除模式
-                        log.info("[OAuth2 Filter] Loaded exclude pattern: {}", regex);
-                    } catch (Exception e) {
-                        // ERROR: 记录无效的正则表达式
-                        log.error("[OAuth2 Filter] Invalid regex: {}", regex, e);
-                    }
-                }
-            }
-        }
-        // INFO: 记录总数
-        log.info("[OAuth2 Filter] Total exclude patterns loaded: {}", excludePatterns.size());
-
         // 初始化缓存
         long sessionTimeoutSec = this.settingService.getSetting().getSessionTimeoutSec();
         this.tokenCache.init(sessionTimeoutSec);
@@ -80,23 +58,15 @@ public class ServletFilter implements Filter {
         ApplicationUser userToSet = null;
 
         // --- 追踪开始: 记录请求路径，便于调试 /* 模式 ---
-        String path = httpRequest.getRequestURI().substring(httpRequest.getContextPath().length());
-        log.debug(">> [OAuth2 Filter] Request START for path: {}", path);
-        // 匹配跳过的uri
-        boolean excludeMatched = false;
-        for (Pattern excludePattern : excludePatterns) {
-            Matcher matcher = excludePattern.matcher(httpRequest.getServletPath());
-            if (matcher.find()) {
-                excludeMatched = true;
-                log.debug("[OAuth2 Filter] Path {} matched exclude pattern: {}", path, excludePattern.pattern());
-                break;
-            }
-        }
-        // 只有带了Authorization的才认为是oauth2要介入的
-        String authHeader = httpRequest.getHeader("Authorization");
+        String servletPath = httpRequest.getServletPath();
+        log.debug(">> [OAuth2 Filter] Request START for path: {}", servletPath);
+        // 当请求的是当前插件的rest接口时
+        boolean isBasicAuthProxyPath = servletPath.startsWith("/rest/oauth2bridge");
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ") || excludeMatched) {
-            log.debug("<< [OAuth2 Filter] No Bearer token found, exclude matched ({}), or no Bearer prefix. Bypassing authentication.", excludeMatched);
+        // 只有带了Authorization的才认为是oauth2要介入的
+        String authHeader = httpRequest.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authHeader == null || !authHeader.startsWith("Bearer ") || isBasicAuthProxyPath) {
+            log.debug("<< [OAuth2 Filter] No Bearer token found, exclude matched ({}), or no Bearer prefix. Bypassing authentication.", isBasicAuthProxyPath);
             // 如果没有Bearer Token，直接放行，进入下一个 try/finally block
         } else {
             // --- Bearer Token 流程开始 ---
@@ -177,7 +147,7 @@ public class ServletFilter implements Filter {
         try {
             // 3. 继续处理过滤器链
             log.debug(">> [Filter Chain] Passing request to next filter.");
-            filterChain.doFilter(servletRequest, servletResponse);
+            filterChain.doFilter(httpRequest, servletResponse);
         } finally {
             // 4. 【关键修正】如果我们在上面设置了用户，请求完成后必须清理！
             if (userToSet != null && authContext != null) {
@@ -192,7 +162,7 @@ public class ServletFilter implements Filter {
                     log.debug("<< [Context Skipped] Context was already cleared by downstream filters.");
                 }
             }
-            log.debug("<< [OAuth2 Filter] Request END for path: {}", path);
+            log.debug("<< [OAuth2 Filter] Request END for path: {}", servletPath);
         }
     }
 

@@ -41,17 +41,18 @@
             </action>
         </actions>
     </webwork1>
-    <servlet-filter key="oauth2bridge-servlet-filter"
-                    name="oauth2bridge Servlet Filter"
-                    class="com.bes.jira.plugins.oauth2bridge.servlet.filter.ServletFilter"
+    <servlet-filter key="oauth2bridge-oauth2-servlet-filter"
+                    name="oauth2bridge Oauth2 Servlet Filter"
+                    class="com.bes.jira.plugins.oauth2bridge.servlet.filter.Oauth2ServletFilter"
                     location="before-dispatch">
-        <description>OAuth2Bridge Servlet Filter Plugin</description>
-        <init-param>
-            <param-name>excludePatterns</param-name>
-            <param-value>
-                <![CDATA[^/rest/[^/]+/oauth2bridge/[^/]+.*]]>
-            </param-value>
-        </init-param>
+        <description>OAuth2Bridge Oauth2 Servlet Filter Plugin</description>
+        <url-pattern>/rest/*</url-pattern>
+    </servlet-filter>
+    <servlet-filter key="oauth2bridge-rest-servlet-filter"
+                    name="oauth2bridge Rest Servlet Filter"
+                    class="com.bes.jira.plugins.oauth2bridge.servlet.filter.RestServletFilter"
+                    location="before-login">
+        <description>OAuth2Bridge Rest Servlet Filter Plugin</description>
         <url-pattern>/rest/*</url-pattern>
     </servlet-filter>
     <rest key="oauth2bridge-rest"
