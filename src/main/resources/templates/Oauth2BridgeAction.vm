@@ -53,42 +53,42 @@
                 <legend><span>$i18n.getText("oauth2bridge.fieldset.endpoint"):</span></legend>
 
                 <div class="aui-field-group">
-                    <label for="introspectionEndpointId" class="aui-label" data-tooltip="$i18n.getText('oauth2bridge.introspectionEndpoint.description')" data-placement="right">
+                    <label for="introspectionEndpointId" class="aui-label" title="$i18n.getText('oauth2bridge.introspectionEndpoint.description')">
                         <strong>$i18n.getText("oauth2bridge.introspectionEndpoint"):</strong>
                     </label>
                     <input class="text medium-long-field" type="text" id="introspectionEndpointId" name="introspectionEndpoint" placeholder="$i18n.getText('oauth2bridge.introspectionEndpoint.placeholder')" value="$!action.introspectionEndpoint"/>
                 </div>
 
                 <div class="aui-field-group">
-                    <label for="baseEndpointId" class="aui-label" data-tooltip="$i18n.getText('oauth2bridge.baseEndpoint.description')" data-placement="right">
+                    <label for="baseEndpointId" class="aui-label" title="$i18n.getText('oauth2bridge.baseEndpoint.description')">
                         <strong>$i18n.getText("oauth2bridge.baseEndpoint"):</strong>
                     </label>
                     <input class="text medium-long-field" type="text" id="baseEndpointId" name="baseEndpoint" placeholder="$i18n.getText('oauth2bridge.baseEndpoint.placeholder')" value="$!action.baseEndpoint"/>
                 </div>
 
                 <div class="aui-field-group">
-                    <label for="invokeEndpointId" class="aui-label" data-tooltip="$i18n.getText('oauth2bridge.invokeEndpoint.description')" data-placement="right">
+                    <label for="invokeEndpointId" class="aui-label" title="$i18n.getText('oauth2bridge.invokeEndpoint.description')">
                         <strong>$i18n.getText("oauth2bridge.invokeEndpoint"):</strong>
                     </label>
                     <input class="text medium-long-field" type="text" id="invokeEndpointId" name="invokeEndpoint" placeholder="$i18n.getText('oauth2bridge.invokeEndpoint.placeholder')" value="$!action.invokeEndpoint"/>
                 </div>
 
                 <div class="aui-field-group">
-                    <label for="authorizeEndpointId" class="aui-label" data-tooltip="$i18n.getText('oauth2bridge.authorizeEndpoint.description')" data-placement="right">
+                    <label for="authorizeEndpointId" class="aui-label" title="$i18n.getText('oauth2bridge.authorizeEndpoint.description')">
                         <strong>$i18n.getText("oauth2bridge.authorizeEndpoint"):</strong>
                     </label>
                     <input class="text medium-long-field" type="text" id="authorizeEndpointId" name="authorizeEndpoint" placeholder="$i18n.getText('oauth2bridge.authorizeEndpoint.placeholder')" value="$!action.authorizeEndpoint"/>
                 </div>
 
                 <div class="aui-field-group">
-                    <label for="clientIdId" class="aui-label" data-tooltip="$i18n.getText('oauth2bridge.clientId.description')" data-placement="right">
+                    <label for="clientIdId" class="aui-label" title="$i18n.getText('oauth2bridge.clientId.description')">
                         <strong>$i18n.getText("oauth2bridge.clientId"):</strong>
                     </label>
                     <input class="text medium-long-field" type="text" id="clientIdId" name="clientId" placeholder="$i18n.getText('oauth2bridge.clientId.placeholder')" value="$!action.clientId"/>
                 </div>
 
                 <div class="aui-field-group">
-                    <label for="clientSecretId" class="aui-label" data-tooltip="$i18n.getText('oauth2bridge.clientSecret.description')" data-placement="right">
+                    <label for="clientSecretId" class="aui-label" title="$i18n.getText('oauth2bridge.clientSecret.description')">
                         <strong>$i18n.getText("oauth2bridge.clientSecret"):</strong>
                     </label>
                     <div class="password-input-wrapper">
@@ -102,7 +102,7 @@
                 <legend><span>$i18n.getText("oauth2bridge.fieldset.session"):</span></legend>
 
                 <div class="aui-field-group">
-                    <label for="sessionTimeoutId" class="aui-label" data-tooltip="$i18n.getText('oauth2bridge.sessionTimeoutSec.description')" data-placement="right">
+                    <label for="sessionTimeoutId" class="aui-label" title="$i18n.getText('oauth2bridge.sessionTimeoutSec.description')">
                         <strong>$i18n.getText("oauth2bridge.sessionTimeoutSec"):</strong>
                     </label>
                     <input class="text short-field" type="number" id="sessionTimeoutId" name="sessionTimeoutSec" min="60" placeholder="$i18n.getText('oauth2bridge.sessionTimeoutSec.placeholder')" value="$!action.sessionTimeoutSec"/>
@@ -113,16 +113,24 @@
                 <legend><span>$i18n.getText("oauth2bridge.fieldset.tls"):</span></legend>
 
                 <div class="aui-field-group">
-                    <div class="checkbox">
-                        <input type="checkbox" id="insecureSkipVerifyId" name="insecureSkipVerify" value="true" #if($action.insecureSkipVerify) checked #end />
-                        <label for="insecureSkipVerifyId" class="aui-label" data-tooltip="$i18n.getText('oauth2bridge.insecureSkipVerify.description')" data-placement="right">
-                            <strong>$i18n.getText("oauth2bridge.insecureSkipVerify")</strong>
-                        </label>
-                    </div>
+
+                    <label for="insecureSkipVerifyId" class="aui-label" title="$i18n.getText('oauth2bridge.insecureSkipVerify.description')">
+                        <strong>$i18n.getText("oauth2bridge.insecureSkipVerify"):</strong>
+                    </label>
+
+                    <select class="select" id="insecureSkipVerifyId" name="insecureSkipVerify">
+
+                        <option value="false" #if(!$action.insecureSkipVerify) selected #end>
+                            $i18n.getText("oauth2bridge.option.no") </option>
+
+                        <option value="true" #if($action.insecureSkipVerify) selected #end>
+                            $i18n.getText("oauth2bridge.option.yes") </option>
+
+                    </select>
                 </div>
 
                 <div class="aui-field-group">
-                    <label for="trustCaCertId" class="aui-label" data-tooltip="$i18n.getText('oauth2bridge.trustCaCert.description')" data-placement="right">
+                    <label for="trustCaCertId" class="aui-label" title="$i18n.getText('oauth2bridge.trustCaCert.description')">
                         <strong>$i18n.getText("oauth2bridge.trustCaCert"):</strong>
                     </label>
                     <textarea class="textarea full-width-field" id="trustCaCertId" name="trustCaCert" rows="10" placeholder="$i18n.getText('oauth2bridge.trustCaCert.placeholder')">$!action.trustCaCert</textarea>

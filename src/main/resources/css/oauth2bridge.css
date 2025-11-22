@@ -1,3 +1,8 @@
+/* 增加每个配置项（label+input）底部的外边距 */
+.aui-field-group {
+    margin-bottom: 20px; /* 增加这个值可以拉大间隔 */
+}
+
 /* 密码框容器：设置为 inline-block 以便包裹住固定宽度的 input */
 .password-input-wrapper {
     position: relative;
