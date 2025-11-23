@@ -3,16 +3,12 @@ package com.bes.jira.plugins.oauth2bridge.service;
 import com.bes.jira.plugins.oauth2bridge.http.factory.HttpClientFactory;
 import com.bes.jira.plugins.oauth2bridge.model.Introspection;
 import com.bes.jira.plugins.oauth2bridge.model.IntrospectionResponse;
-import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
@@ -23,10 +19,7 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidParameterException;
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.List;
 
 @Named
 public class Oauth2Service {

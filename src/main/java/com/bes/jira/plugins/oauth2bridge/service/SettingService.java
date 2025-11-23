@@ -1,6 +1,5 @@
 package com.bes.jira.plugins.oauth2bridge.service;
 
-import com.atlassian.plugin.ModuleDescriptor;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.atlassian.sal.api.pluginsettings.PluginSettings;
 import com.atlassian.sal.api.pluginsettings.PluginSettingsFactory;
@@ -40,8 +39,8 @@ public class SettingService {
         this.settingCache = new AtomicReference<>(initialSetting);
 
         // INFO: 记录初始配置加载完成的摘要
-        log.info("Initial settings loaded. Client ID: {}, Base Endpoint: {}, Session Timeout: {}s.",
-                initialSetting.getClientId(), initialSetting.getBaseEndpoint(), initialSetting.getSessionTimeoutSec());
+        log.info("Initial settings loaded. Client ID: {}, Session Timeout: {}s.",
+                initialSetting.getClientId(), initialSetting.getSessionTimeoutSec());
     }
 
     public void updateSetting(Oauth2BridgeSetting oauth2BridgeSetting) throws IOException {
@@ -52,9 +51,8 @@ public class SettingService {
         settingCache.set(oauth2BridgeSetting);
 
         // INFO: 记录关键操作成功。注意：必须脱敏 clientSecret 和 trustCaCert。
-        log.info("Settings updated and cache replaced successfully. Details: Client ID={}, Base Endpoint={}, Skip Verify={}, Has Secret={}, Has Custom CA={}",
+        log.info("Settings updated and cache replaced successfully. Details: Client ID={},Skip Verify={}, Has Secret={}, Has Custom CA={}",
                 oauth2BridgeSetting.getClientId(),
-                oauth2BridgeSetting.getBaseEndpoint(),
                 oauth2BridgeSetting.isInsecureSkipVerify(),
                 (oauth2BridgeSetting.getClientSecret() != null && !oauth2BridgeSetting.getClientSecret().isEmpty()), // 检查 Secret 是否存在
                 (oauth2BridgeSetting.getTrustCaCert() != null && !oauth2BridgeSetting.getTrustCaCert().isEmpty()) // 检查证书是否存在
@@ -104,8 +102,8 @@ public class SettingService {
 
     private Oauth2BridgeSetting createDefaultSetting() {
         return new Oauth2BridgeSetting(
-                "", "", "", "",
-                "", "", true, "", 30 * 60
+                "", "", "",
+                true, "", 30 * 60
         );
     }
 

@@ -35,15 +35,12 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
 
     @Override
     public String doDefault() {
-// INFO: 记录用户进入页面的行为，便于审计
+        // INFO: 记录用户进入页面的行为，便于审计
         log.info("User is accessing OAuth2 Bridge configuration page.");
 
         Oauth2BridgeSetting setting = settingService.getSetting();
         if (setting != null) {
             introspectionEndpoint = setting.getIntrospectionEndpoint();
-            baseEndpoint = setting.getBaseEndpoint(); // 假设 Model 中有这个字段
-            invokeEndpoint = setting.getInvokeEndpoint(); // 假设 Model 中有这个字段
-            authorizeEndpoint = setting.getAuthorizeEndpoint(); // 假设 Model 中有这个字段
             clientId = setting.getClientId();
             clientSecret = setting.getClientSecret();
             insecureSkipVerify = setting.isInsecureSkipVerify();
@@ -64,7 +61,7 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
 
     @Override
     public String doExecute() throws IOException {
-// 这里的检查通常由 Jira 框架处理，但保留也无妨
+        // doDefault Jira 框架处理后没有走到doDefault，手动转发
         if (this.command == null || this.command.isEmpty()) {
             return this.doDefault();
         }
@@ -95,8 +92,8 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
         }
 
         Oauth2BridgeSetting oauth2BridgeSetting = new Oauth2BridgeSetting(
-                introspectionEndpoint, baseEndpoint, invokeEndpoint, authorizeEndpoint,
-                clientId, clientSecret, insecureSkipVerify, trustCaCert, sessionTimeoutSec
+                introspectionEndpoint, clientId, clientSecret,
+                insecureSkipVerify, trustCaCert, sessionTimeoutSec
         );
 
         // DEBUG: 打印即将保存的对象，注意再次脱敏 Secret

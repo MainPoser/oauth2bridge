@@ -60,27 +60,6 @@
                 </div>
 
                 <div class="aui-field-group">
-                    <label for="baseEndpointId" class="aui-label" title="$i18n.getText('oauth2bridge.baseEndpoint.description')">
-                        <strong>$i18n.getText("oauth2bridge.baseEndpoint"):</strong>
-                    </label>
-                    <input class="text medium-long-field" type="text" id="baseEndpointId" name="baseEndpoint" placeholder="$i18n.getText('oauth2bridge.baseEndpoint.placeholder')" value="$!action.baseEndpoint"/>
-                </div>
-
-                <div class="aui-field-group">
-                    <label for="invokeEndpointId" class="aui-label" title="$i18n.getText('oauth2bridge.invokeEndpoint.description')">
-                        <strong>$i18n.getText("oauth2bridge.invokeEndpoint"):</strong>
-                    </label>
-                    <input class="text medium-long-field" type="text" id="invokeEndpointId" name="invokeEndpoint" placeholder="$i18n.getText('oauth2bridge.invokeEndpoint.placeholder')" value="$!action.invokeEndpoint"/>
-                </div>
-
-                <div class="aui-field-group">
-                    <label for="authorizeEndpointId" class="aui-label" title="$i18n.getText('oauth2bridge.authorizeEndpoint.description')">
-                        <strong>$i18n.getText("oauth2bridge.authorizeEndpoint"):</strong>
-                    </label>
-                    <input class="text medium-long-field" type="text" id="authorizeEndpointId" name="authorizeEndpoint" placeholder="$i18n.getText('oauth2bridge.authorizeEndpoint.placeholder')" value="$!action.authorizeEndpoint"/>
-                </div>
-
-                <div class="aui-field-group">
                     <label for="clientIdId" class="aui-label" title="$i18n.getText('oauth2bridge.clientId.description')">
                         <strong>$i18n.getText("oauth2bridge.clientId"):</strong>
                     </label>
