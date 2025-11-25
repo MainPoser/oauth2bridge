@@ -1,23 +1,45 @@
-// 确保在 AUI 环境下安全运行
-AJS.toInit(function($) {
-    var $passwordInput = $("#clientSecretId");
-    var $toggleBtn = $("#togglePasswordBtn");
+AJS.toInit(function () {
+    var $tableBody = AJS.$('#clientConfigTableBody');
 
-    $toggleBtn.on("click", function() {
-        var currentType = $passwordInput.attr("type");
+    function createNewRow() {
+        return `
+            <tr>
+                <td>
+                    <input class="text full-width-field" type="text"
+                           name="clientIds"
+                           placeholder="${window.OAuth2BridgeI18n.clientIdPlaceholder}"
+                           value=""/>
+                </td>
+                <td>
+                    <input class="text full-width-field" type="text"
+                           name="callbacks"
+                           placeholder="${window.OAuth2BridgeI18n.callbackPlaceholder}"
+                           value=""/>
+                </td>
+                <td>
+                    <button type="button"
+                            class="aui-button aui-button-link delete-row-btn">
+                        ${window.OAuth2BridgeI18n.deleteButton}
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
 
-        if (currentType === "password") {
-            // 切换为明文
-            $passwordInput.attr("type", "text");
-            // 改变图标样式 (假设使用 AUI 图标，如果有特定的 'view-hidden' 图标可以切换类名)
-            // 如果你的 Jira 版本没有 'aui-iconfont-view-hidden'，你可以只改变不透明度或颜色来表示状态
-            $(this).addClass("active");
-            $(this).attr("title", "Hide Password");
-        } else {
-            // 切换为密码
-            $passwordInput.attr("type", "password");
-            $(this).removeClass("active");
-            $(this).attr("title", "Show Password");
+    // 添加行
+    AJS.$('#addRowBtn').on('click', function() {
+        $tableBody.append(createNewRow());
+    });
+
+    // 删除行
+    $tableBody.on('click', '.delete-row-btn', function() {
+        if (confirm(window.OAuth2BridgeI18n.deleteConfirm)) {
+            AJS.$(this).closest('tr').remove();
         }
     });
+
+    // 默认显示一行
+    if ($tableBody.children().length === 0) {
+        $tableBody.append(createNewRow());
+    }
 });

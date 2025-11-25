@@ -13,8 +13,6 @@
     <description>This is the com.bes.jira.plugins:oauth2bridge plugin for Atlassian JIRA.</description>
     <packaging>atlassian-plugin</packaging>
     <dependencies>
-
-
         <dependency>
             <groupId>com.atlassian.plugins.rest</groupId>
             <artifactId>atlassian-rest-common</artifactId>

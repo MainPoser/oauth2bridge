@@ -1,6 +1,14 @@
 <html>
 <head>
     <title>$i18n.getText("oauth2bridge.title")</title>
+    <script type="text/javascript">
+        window.OAuth2BridgeI18n = {
+            clientIdPlaceholder: "$i18n.getText('oauth2bridge.clientId.placeholder')",
+            callbackPlaceholder: "$i18n.getText('oauth2bridge.callback.placeholder')",
+            deleteButton: "$i18n.getText('oauth2bridge.clients.delete.button')",
+            deleteConfirm: "$i18n.getText('oauth2bridge.clients.delete.confirm')"
+        };
+    </script>
     $webResourceManager.requireResourcesForContext("com.bes.jira.plugins.oauth2bridge")
     <meta name="decorator" content="atl.admin"/>
     <meta name="admin.active.section" content="admin_plugins_menu/oauth2-bridge-section"/>
@@ -15,7 +23,7 @@
             <h1>$i18n.getText("oauth2bridge.title")</h1>
         </div>
 
-        #if($action.hasAnyMessages())
+        #if($action.hasAnyErrors())
             #if($action.getErrors().size() > 0 || $action.getErrorMessages().size() > 0)
                 <div class="aui-message aui-message-error">
                     <p class="title">
@@ -48,44 +56,41 @@
 
         <form class="aui" method="post">
             <input type="hidden" name="command" value="execute"/>
-
             <fieldset class="group">
-                <legend><span>$i18n.getText("oauth2bridge.fieldset.endpoint"):</span></legend>
-
+                <legend><span>$i18n.getText("oauth2bridge.fieldset.clients"):</span></legend>
                 <div class="aui-field-group">
-                    <label for="introspectionEndpointId" class="aui-label" title="$i18n.getText('oauth2bridge.introspectionEndpoint.description')">
-                        <strong>$i18n.getText("oauth2bridge.introspectionEndpoint"):</strong>
-                    </label>
-                    <input class="text medium-long-field" type="text" id="introspectionEndpointId" name="introspectionEndpoint" placeholder="$i18n.getText('oauth2bridge.introspectionEndpoint.placeholder')" value="$!action.introspectionEndpoint"/>
+                    <table id="clientConfigTable" class="aui">
+                        <thead>
+                            <tr>
+                                <th width="40%">$i18n.getText("oauth2bridge.clientId")</th>
+                                <th width="40%">$i18n.getText("oauth2bridge.callback")</th>
+                                <th width="20%">$i18n.getText("oauth2bridge.operation")</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientConfigTableBody">
+                            #set($list = $action.getClientConfigPairs())
+                            #if($list && $list.size() > 0)
+                                #foreach($config in $list)
+                                    <tr>
+                                        <td>
+                                            <input class="text full-width-field" type="text" name="clientIds" placeholder="$i18n.getText('oauth2bridge.clientId.placeholder')" value="$!config.getClientId()"/>
+                                        </td>
+                                        <td>
+                                            <input class="text full-width-field" type="text" name="callbacks" placeholder="$i18n.getText('oauth2bridge.callback.placeholder')" value="$!config.getCallback()"/>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="aui-button aui-button-link delete-row-btn">$i18n.getText("oauth2bridge.clients.delete.button")</button>
+                                        </td>
+                                    </tr>
+                                #end
+                            #end
+                        </tbody>
+                    </table>
+                </div>
+                <div class="aui-buttons">
+                    <button type="button" class="aui-button" id="addRowBtn">$i18n.getText("oauth2bridge.clients.addRow.button")</button>
                 </div>
 
-                <div class="aui-field-group">
-                    <label for="clientIdId" class="aui-label" title="$i18n.getText('oauth2bridge.clientId.description')">
-                        <strong>$i18n.getText("oauth2bridge.clientId"):</strong>
-                    </label>
-                    <input class="text medium-long-field" type="text" id="clientIdId" name="clientId" placeholder="$i18n.getText('oauth2bridge.clientId.placeholder')" value="$!action.clientId"/>
-                </div>
-
-                <div class="aui-field-group">
-                    <label for="clientSecretId" class="aui-label" title="$i18n.getText('oauth2bridge.clientSecret.description')">
-                        <strong>$i18n.getText("oauth2bridge.clientSecret"):</strong>
-                    </label>
-                    <div class="password-input-wrapper">
-                        <input class="text medium-long-field" type="password" id="clientSecretId" name="clientSecret" placeholder="$i18n.getText('oauth2bridge.clientSecret.placeholder')" value="$!action.clientSecret"/>
-                        <span id="togglePasswordBtn" class="aui-icon aui-icon-small aui-iconfont-view password-toggle-icon" title="Show Password">Show/Hide</span>
-                    </div>
-                </div>
-            </fieldset>
-
-            <fieldset class="group">
-                <legend><span>$i18n.getText("oauth2bridge.fieldset.session"):</span></legend>
-
-                <div class="aui-field-group">
-                    <label for="sessionTimeoutId" class="aui-label" title="$i18n.getText('oauth2bridge.sessionTimeoutSec.description')">
-                        <strong>$i18n.getText("oauth2bridge.sessionTimeoutSec"):</strong>
-                    </label>
-                    <input class="text short-field" type="number" id="sessionTimeoutId" name="sessionTimeoutSec" min="60" placeholder="$i18n.getText('oauth2bridge.sessionTimeoutSec.placeholder')" value="$!action.sessionTimeoutSec"/>
-                </div>
             </fieldset>
 
             <fieldset class="group">

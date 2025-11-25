@@ -37,15 +37,15 @@
             <action name="com.bes.jira.plugins.oauth2bridge.action.Oauth2BridgeAction"
                     alias="oauth2bridge">
                 <view name="input">/templates/Oauth2BridgeAction.vm</view>
-                <view name="success">/templates/Oauth2BridgeAction.vm</view>
             </action>
         </actions>
     </webwork1>
-    <servlet-filter key="oauth2bridge-oauth2-servlet-filter"
-                    name="oauth2bridge Oauth2 Servlet Filter"
-                    class="com.bes.jira.plugins.oauth2bridge.servlet.filter.Oauth2ServletFilter"
-                    location="before-dispatch">
-        <description>OAuth2Bridge Oauth2 Servlet Filter Plugin</description>
-        <url-pattern>/rest/*</url-pattern>
-    </servlet-filter>
+    <servlet name="Oauth2Bridge Servlet" key="oauth2bridge-servlet" class="com.bes.jira.plugins.oauth2bridge.servlet.Oauth2BridgeServlet">
+        <description>Provide servlet.</description>
+        <url-pattern>/oauth2bridge</url-pattern>
+        <init-param>
+            <param-name>defaultName</param-name>
+            <param-value>Australia</param-value>
+        </init-param>
+    </servlet>
 </atlassian-plugin>

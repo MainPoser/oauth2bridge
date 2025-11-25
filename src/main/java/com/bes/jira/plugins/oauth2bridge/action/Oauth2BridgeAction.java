@@ -1,32 +1,37 @@
 package com.bes.jira.plugins.oauth2bridge.action;
 
 import com.atlassian.jira.web.action.JiraWebActionSupport;
+import com.bes.jira.plugins.oauth2bridge.model.ClientConfigPair;
 import com.bes.jira.plugins.oauth2bridge.model.Oauth2BridgeSetting;
 import com.bes.jira.plugins.oauth2bridge.service.SettingService;
-import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 @Named
 public class Oauth2BridgeAction extends JiraWebActionSupport {
 
+
     private static final Logger log = LoggerFactory.getLogger(Oauth2BridgeAction.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final SettingService settingService;
 
-    private String introspectionEndpoint;
-    private String baseEndpoint;
-    private String invokeEndpoint;
-    private String authorizeEndpoint;
-    private String clientId;
-    private String clientSecret;
     public boolean insecureSkipVerify;
     public String trustCaCert;
-    public long sessionTimeoutSec;
+
+    private List<ClientConfigPair> clientConfigPairs = Collections.emptyList();
+
+    private String[] clientIds;
+    private String[] callbacks;
 
     @Inject
     public Oauth2BridgeAction(SettingService settingService) {
@@ -35,22 +40,20 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
 
     @Override
     public String doDefault() {
-        // INFO: 记录用户进入页面的行为，便于审计
-        log.info("User is accessing OAuth2 Bridge configuration page.");
+        log.info("User is accessing OAuth2 Bridge configuration page (doDefault).");
 
         Oauth2BridgeSetting setting = settingService.getSetting();
         if (setting != null) {
-            introspectionEndpoint = setting.getIntrospectionEndpoint();
-            clientId = setting.getClientId();
-            clientSecret = setting.getClientSecret();
             insecureSkipVerify = setting.isInsecureSkipVerify();
             trustCaCert = setting.getTrustCaCert();
-            sessionTimeoutSec = setting.getSessionTimeoutSec();
+            clientConfigPairs = setting.getClientConfigPairs();
 
-            // DEBUG: 打印加载的详细配置，但必须对敏感信息脱敏
-            if (log.isDebugEnabled()) {
-                log.debug("Loaded existing settings: clientId={}, introspectionEndpoint={}, hasSecret={}, sessionTimeout={}",
-                        clientId, introspectionEndpoint, StringUtils.isNotBlank(clientSecret), sessionTimeoutSec);
+            log.info("Loaded existing settings: insecureSkipVerify={}, trustCaCert present={}, clientConfigPairs size={}",
+                    insecureSkipVerify, trustCaCert != null && !trustCaCert.isEmpty(), clientConfigPairs.size());
+
+            // 打印每一条 client 配置
+            for (ClientConfigPair c : clientConfigPairs) {
+                log.info("Loaded clientConfigPair - clientId: '{}', callback: '{}'", c.getClientId(), c.getCallback());
             }
         } else {
             log.info("No existing OAuth2 Bridge settings found, initializing defaults.");
@@ -61,107 +64,81 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
 
     @Override
     public String doExecute() throws IOException {
-        // doDefault Jira 框架处理后没有走到doDefault，手动转发
+        log.info("doExecute called with command='{}'", command);
+
         if (this.command == null || this.command.isEmpty()) {
+            log.info("Command is empty, forwarding to doDefault.");
             return this.doDefault();
         }
 
-        // INFO: 记录关键动作的开始
-        log.info("Attempting to update OAuth2 Bridge settings.");
+        log.info("Starting OAuth2 Bridge settings update...");
 
-        // 逻辑处理：根据 baseEndpoint 自动填充
-        if (StringUtils.isNotBlank(baseEndpoint)) {
-            boolean changed = false;
-            if (StringUtils.isBlank(introspectionEndpoint)) {
-                introspectionEndpoint = baseEndpoint + "/oauth/introspection";
-                changed = true;
-            }
-            if (StringUtils.isBlank(invokeEndpoint)) {
-                invokeEndpoint = baseEndpoint + "/oauth/revoke";
-                changed = true;
-            }
-            if (StringUtils.isBlank(authorizeEndpoint)) {
-                authorizeEndpoint = baseEndpoint + "/oauth/authorize";
-                changed = true;
-            }
-
-            // DEBUG: 只有在触发了自动填充逻辑时才打印
-            if (changed) {
-                log.debug("Auto-populated endpoints based on baseEndpoint: {}", baseEndpoint);
-            }
+        if (clientIds != null) {
+            log.info("Received clientIds: {}", Arrays.toString(clientIds));
+        } else {
+            log.warn("Received clientIds is null!");
         }
 
-        Oauth2BridgeSetting oauth2BridgeSetting = new Oauth2BridgeSetting(
-                introspectionEndpoint, clientId, clientSecret,
-                insecureSkipVerify, trustCaCert, sessionTimeoutSec
-        );
-
-        // DEBUG: 打印即将保存的对象，注意再次脱敏 Secret
-        if (log.isDebugEnabled()) {
-            log.debug("Saving settings: introspection={}, base={}, authorize={}, clientId={}, insecureSkipVerify={}, hasSecret={}",
-                    introspectionEndpoint, baseEndpoint, authorizeEndpoint, clientId, insecureSkipVerify, StringUtils.isNotBlank(clientSecret));
+        if (callbacks != null) {
+            log.info("Received callbacks: {}", Arrays.toString(callbacks));
+        } else {
+            log.warn("Received callbacks is null!");
         }
+
+        List<ClientConfigPair> newClientConfigPairs = new ArrayList<>();
+        if (clientIds != null && callbacks != null && clientIds.length == callbacks.length) {
+            for (int i = 0; i < clientIds.length; i++) {
+                String clientId = clientIds[i];
+                String callback = callbacks[i];
+
+                if (clientId != null && !clientId.trim().isEmpty() && callback != null && !callback.isEmpty()) {
+                    newClientConfigPairs.add(new ClientConfigPair(callback,clientId.trim()));
+                    log.info("Adding clientConfigPair - clientId: '{}', callback: '{}'", clientId.trim(), callback);
+                } else {
+                    log.warn("Skipping empty or invalid clientConfigPair - clientId: '{}', callback: '{}'", clientId, callback);
+                }
+            }
+        } else {
+            log.warn("clientIds and callbacks arrays are null or have different lengths: clientIds.length={}, callbacks.length={}",
+                    clientIds != null ? clientIds.length : "null",
+                    callbacks != null ? callbacks.length : "null");
+        }
+
+        Oauth2BridgeSetting oauth2BridgeSetting = new Oauth2BridgeSetting(newClientConfigPairs, insecureSkipVerify, trustCaCert);
+        log.info("Prepared Oauth2BridgeSetting for saving: clientConfigPairs size={}, insecureSkipVerify={}, trustCaCert present={}",
+                newClientConfigPairs.size(), insecureSkipVerify, trustCaCert != null && !trustCaCert.isEmpty());
 
         try {
             settingService.updateSetting(oauth2BridgeSetting);
-            // INFO: 明确的操作成功反馈
             log.info("OAuth2 Bridge settings updated successfully.");
         } catch (Exception e) {
-            // ERROR: 捕获异常并记录堆栈，这是日志最重要的部分之一
             log.error("Failed to update OAuth2 Bridge settings.", e);
             addErrorMessage("Failed to save settings: " + e.getMessage());
             return ERROR;
         }
 
-        return SUCCESS;
+        return getRedirect("oauth2bridge.jspa");
     }
 
-    public String getIntrospectionEndpoint() {
-        return introspectionEndpoint;
+    // Getters / Setters
+    public List<ClientConfigPair> getClientConfigPairs() {
+        return clientConfigPairs;
     }
 
-    public void setIntrospectionEndpoint(String introspectionEndpoint) {
-        this.introspectionEndpoint = introspectionEndpoint;
+    public String[] getClientIds() {
+        return clientIds;
     }
 
-    public String getBaseEndpoint() {
-        return baseEndpoint;
+    public void setClientIds(String[] clientIds) {
+        this.clientIds = clientIds;
     }
 
-    public void setBaseEndpoint(String baseEndpoint) {
-        this.baseEndpoint = baseEndpoint;
+    public String[] getCallbacks() {
+        return callbacks;
     }
 
-    public String getInvokeEndpoint() {
-        return invokeEndpoint;
-    }
-
-    public void setInvokeEndpoint(String invokeEndpoint) {
-        this.invokeEndpoint = invokeEndpoint;
-    }
-
-    public String getAuthorizeEndpoint() {
-        return authorizeEndpoint;
-    }
-
-    public void setAuthorizeEndpoint(String authorizeEndpoint) {
-        this.authorizeEndpoint = authorizeEndpoint;
-    }
-
-    public String getClientId() {
-        return clientId;
-    }
-
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
-    }
-
-    public String getClientSecret() {
-        return clientSecret;
-    }
-
-    public void setClientSecret(String clientSecret) {
-        this.clientSecret = clientSecret;
+    public void setCallbacks(String[] callbacks) {
+        this.callbacks = callbacks;
     }
 
     public boolean isInsecureSkipVerify() {
@@ -178,13 +155,5 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
 
     public void setTrustCaCert(String trustCaCert) {
         this.trustCaCert = trustCaCert;
-    }
-
-    public long getSessionTimeoutSec() {
-        return sessionTimeoutSec;
-    }
-
-    public void setSessionTimeoutSec(long sessionTimeoutSec) {
-        this.sessionTimeoutSec = sessionTimeoutSec;
     }
 }
