@@ -116,13 +116,24 @@ public class Oauth2BridgeServlet extends HttpServlet {
         ObjectNode json = objectMapper.createObjectNode();
 
         Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie c : cookies) {
-                // INFO: 确认成功捕获了所有 Cookie，包括 JSESSIONID
-                log.debug("Captured cookie: {}", c.getName());
-                json.put(c.getName(), c.getValue());
+        if (cookies != null && cookies.length > 0) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < cookies.length; i++) {
+                Cookie c = cookies[i];
+                // 拼成 cookie 字符串: name=value; name2=value2; ...
+                sb.append(c.getName()).append("=").append(c.getValue());
+                if (i < cookies.length - 1) {
+                    sb.append("; ");
+                }
             }
+            String cookieStr = sb.toString();
+            log.debug("Combined cookie string: {}", cookieStr);
+            json.put("cookie", cookieStr);
+        } else {
+            log.debug("No cookies found in request.");
+            json.put("cookie", "");
         }
+
         return json;
     }
 }
