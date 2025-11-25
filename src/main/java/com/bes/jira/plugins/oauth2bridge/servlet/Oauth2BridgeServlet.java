@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 @Named
 public class Oauth2BridgeServlet extends HttpServlet {
@@ -116,23 +117,14 @@ public class Oauth2BridgeServlet extends HttpServlet {
         ObjectNode json = objectMapper.createObjectNode();
 
         Cookie[] cookies = request.getCookies();
-        if (cookies != null && cookies.length > 0) {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < cookies.length; i++) {
-                Cookie c = cookies[i];
-                // 拼成 cookie 字符串: name=value; name2=value2; ...
-                sb.append(c.getName()).append("=").append(c.getValue());
-                if (i < cookies.length - 1) {
-                    sb.append("; ");
-                }
-            }
-            String cookieStr = sb.toString();
-            log.debug("Combined cookie string: {}", cookieStr);
-            json.put("cookie", cookieStr);
-        } else {
-            log.debug("No cookies found in request.");
-            json.put("cookie", "");
-        }
+        String cookieStr = (cookies == null) ? "" :
+                Arrays.stream(cookies)
+                        .map(c -> c.getName() + "=" + c.getValue())
+                        .reduce((c1, c2) -> c1 + "; " + c2)
+                        .orElse("");
+
+        log.debug("Combined cookie string: {}", cookieStr);
+        json.put("cookie", cookieStr);
 
         return json;
     }
