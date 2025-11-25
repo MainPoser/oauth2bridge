@@ -32,6 +32,7 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
 
     private String[] clientIds;
     private String[] callbacks;
+    private String[] redirectUrls;
 
     @Inject
     public Oauth2BridgeAction(SettingService settingService) {
@@ -86,16 +87,18 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
         }
 
         List<ClientConfigPair> newClientConfigPairs = new ArrayList<>();
-        if (clientIds != null && callbacks != null && clientIds.length == callbacks.length) {
+        if (clientIds != null && callbacks != null && redirectUrls != null &&
+                clientIds.length == callbacks.length && redirectUrls.length == callbacks.length) {
             for (int i = 0; i < clientIds.length; i++) {
                 String clientId = clientIds[i];
                 String callback = callbacks[i];
+                String redirectUrl = redirectUrls[i];
 
                 if (clientId != null && !clientId.trim().isEmpty() && callback != null && !callback.isEmpty()) {
-                    newClientConfigPairs.add(new ClientConfigPair(callback,clientId.trim()));
-                    log.info("Adding clientConfigPair - clientId: '{}', callback: '{}'", clientId.trim(), callback);
+                    newClientConfigPairs.add(new ClientConfigPair(callback, clientId.trim(), redirectUrl.trim()));
+                    log.info("Adding clientConfigPair - clientId: '{}', callback: '{}', redirectUrl: '{}'", clientId.trim(), callback, redirectUrl);
                 } else {
-                    log.warn("Skipping empty or invalid clientConfigPair - clientId: '{}', callback: '{}'", clientId, callback);
+                    log.warn("Skipping empty or invalid clientConfigPair - clientId: '{}', callback: '{}', redirectUrl: '{}'", clientId, callback, redirectUrl);
                 }
             }
         } else {
@@ -139,6 +142,14 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
 
     public void setCallbacks(String[] callbacks) {
         this.callbacks = callbacks;
+    }
+
+    public String[] getRedirectUrls() {
+        return redirectUrls;
+    }
+
+    public void setRedirectUrls(String[] redirectUrls) {
+        this.redirectUrls = redirectUrls;
     }
 
     public boolean isInsecureSkipVerify() {

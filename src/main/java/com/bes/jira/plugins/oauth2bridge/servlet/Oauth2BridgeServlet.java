@@ -1,6 +1,10 @@
 package com.bes.jira.plugins.oauth2bridge.servlet;
 
+import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
+import com.atlassian.sal.api.user.UserManager;
+import com.atlassian.sal.api.user.UserProfile;
 import com.bes.jira.plugins.oauth2bridge.http.factory.HttpClientFactory;
+import com.bes.jira.plugins.oauth2bridge.model.CallbackResponse;
 import com.bes.jira.plugins.oauth2bridge.model.ClientConfigPair;
 import com.bes.jira.plugins.oauth2bridge.service.SettingService;
 import org.apache.commons.lang3.StringUtils;
@@ -31,14 +35,19 @@ import java.util.Arrays;
 public class Oauth2BridgeServlet extends HttpServlet {
     private static final Logger log = LoggerFactory.getLogger(Oauth2BridgeServlet.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
-
+    private final UserManager userManager;
     private final HttpClientFactory httpClientFactory;
     private final SettingService settingService;
 
     @Inject
-    public Oauth2BridgeServlet(HttpClientFactory httpClientFactory, SettingService settingService) {
+    public Oauth2BridgeServlet(
+            @ComponentImport UserManager userManager,
+            HttpClientFactory httpClientFactory,
+            SettingService settingService
+    ) {
         this.httpClientFactory = httpClientFactory;
         this.settingService = settingService;
+        this.userManager = userManager;
     }
 
     /**
@@ -66,20 +75,25 @@ public class Oauth2BridgeServlet extends HttpServlet {
 
         // 3. 校验是否匹配 (逻辑与原 REST 保持一致)
         // 注意：这里的校验逻辑似乎是反的，但在转换中我们保持原样
-        boolean allow = false;
+        ClientConfigPair allowClientConfigPair = null;
         for (ClientConfigPair clientConfigPair : settingService.getSetting().getClientConfigPairs()) {
             if (clientConfigPair.getClientId().equals(clientId) && clientConfigPair.getCallback().equals(callback)) {
-                allow = true;
+                allowClientConfigPair = clientConfigPair;
                 break;
             }
         }
 
-        if (!allow) {
+        if (null == allowClientConfigPair) {
             resp.setStatus(HttpStatus.SC_UNAUTHORIZED);
             resp.getWriter().write(MessageFormatter.format("client_id:{} callback: {} or callback is be not allowed", clientId, callback).getMessage());
             return;
         }
-
+        UserProfile remoteUser = userManager.getRemoteUser(req);
+        if (remoteUser == null) {
+            resp.setStatus(HttpStatus.SC_UNAUTHORIZED);
+            resp.getWriter().write("not login");
+            return;
+        }
         // 4. 提取 Cookies
         ObjectNode cookiesAsJson = extractCookiesAsJson(req);
 
@@ -95,13 +109,24 @@ public class Oauth2BridgeServlet extends HttpServlet {
 
         // 6. 处理内部请求响应
         try (CloseableHttpResponse response = httpClient.execute(post)) {
-            // 将内部请求的状态码和实体转发给外部客户端
-            resp.setStatus(response.getStatusLine().getStatusCode());
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+                String redirectUri = allowClientConfigPair.getRedirectUrl();
+                if (response.getEntity() != null) {
+                    String responseBody = EntityUtils.toString(response.getEntity());
 
-            // 确保响应内容被正确复制
-            if (response.getEntity() != null) {
-                String responseBody = EntityUtils.toString(response.getEntity());
-                resp.getWriter().write(responseBody);
+                    // 反序列化 JSON 到对象
+                    CallbackResponse callbackResponse = objectMapper.readValue(responseBody, CallbackResponse.class);
+
+                    // 如果包含 redirectUri，进行重定向
+                    if (callbackResponse.getRedirectUri() != null && !callbackResponse.getRedirectUri().isEmpty()) {
+                        redirectUri = callbackResponse.getRedirectUri();
+                    }
+                }
+                resp.sendRedirect(redirectUri);
+            } else {
+                log.error("Request callback response status: {}", response.getStatusLine().getStatusCode());
+                resp.setStatus(response.getStatusLine().getStatusCode());
+                resp.getWriter().write(response.getEntity().toString());
             }
         } catch (IOException e) {
             log.error("Request callback failed: {}", e.getMessage(), e); // 记录完整的错误信息

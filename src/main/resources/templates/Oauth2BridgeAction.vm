@@ -5,6 +5,7 @@
         window.OAuth2BridgeI18n = {
             clientIdPlaceholder: "$i18n.getText('oauth2bridge.clientId.placeholder')",
             callbackPlaceholder: "$i18n.getText('oauth2bridge.callback.placeholder')",
+            redirectUrlPlaceholder: "$i18n.getText('oauth2bridge.redirectUrl.placeholder')",
             deleteButton: "$i18n.getText('oauth2bridge.clients.delete.button')",
             deleteConfirm: "$i18n.getText('oauth2bridge.clients.delete.confirm')"
         };
@@ -64,6 +65,7 @@
                             <tr>
                                 <th width="40%">$i18n.getText("oauth2bridge.clientId")</th>
                                 <th width="40%">$i18n.getText("oauth2bridge.callback")</th>
+                                <th width="40%">$i18n.getText("oauth2bridge.redirectUrl")</th>
                                 <th width="20%">$i18n.getText("oauth2bridge.operation")</th>
                             </tr>
                         </thead>
@@ -77,6 +79,9 @@
                                         </td>
                                         <td>
                                             <input class="text full-width-field" type="text" name="callbacks" placeholder="$i18n.getText('oauth2bridge.callback.placeholder')" value="$!config.getCallback()"/>
+                                        </td>
+                                        <td>
+                                            <input class="text full-width-field" type="text" name="redirectUrls" placeholder="$i18n.getText('oauth2bridge.redirectUrl.placeholder')" value="$!config.getRedirectUrl()"/>
                                         </td>
                                         <td>
                                             <button type="button" class="aui-button aui-button-link delete-row-btn">$i18n.getText("oauth2bridge.clients.delete.button")</button>

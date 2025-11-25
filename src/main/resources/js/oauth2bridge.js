@@ -17,6 +17,12 @@ AJS.toInit(function () {
                            value=""/>
                 </td>
                 <td>
+                    <input class="text full-width-field" type="text"
+                           name="redirectUrls"
+                           placeholder="${window.OAuth2BridgeI18n.redirectUrlPlaceholder}"
+                           value=""/>
+                </td>
+                <td>
                     <button type="button"
                             class="aui-button aui-button-link delete-row-btn">
                         ${window.OAuth2BridgeI18n.deleteButton}
