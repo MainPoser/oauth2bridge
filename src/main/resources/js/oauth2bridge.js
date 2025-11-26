@@ -5,13 +5,13 @@ AJS.toInit(function () {
         return `
             <tr>
                 <td>
-                    <input class="text full-width-field" type="text"
+                    <input required class="text full-width-field" type="text"
                            name="clientIds"
                            placeholder="${window.OAuth2BridgeI18n.clientIdPlaceholder}"
                            value=""/>
                 </td>
                 <td>
-                    <input class="text full-width-field" type="text"
+                    <input required class="text full-width-field" type="text"
                            name="callbacks"
                            placeholder="${window.OAuth2BridgeI18n.callbackPlaceholder}"
                            value=""/>
@@ -43,9 +43,4 @@ AJS.toInit(function () {
             AJS.$(this).closest('tr').remove();
         }
     });
-
-    // 默认显示一行
-    if ($tableBody.children().length === 0) {
-        $tableBody.append(createNewRow());
-    }
 });

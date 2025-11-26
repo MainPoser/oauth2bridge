@@ -1,6 +1,9 @@
 package com.bes.jira.plugins.oauth2bridge.servlet;
 
+import com.atlassian.jira.util.UrlBuilder;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
+import com.atlassian.sal.api.ApplicationProperties;
+import com.atlassian.sal.api.UrlMode;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.sal.api.user.UserProfile;
 import com.bes.jira.plugins.oauth2bridge.http.factory.HttpClientFactory;
@@ -8,7 +11,9 @@ import com.bes.jira.plugins.oauth2bridge.model.CallbackResponse;
 import com.bes.jira.plugins.oauth2bridge.model.ClientConfigPair;
 import com.bes.jira.plugins.oauth2bridge.service.SettingService;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpException;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.RedirectException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -28,6 +33,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -40,11 +47,7 @@ public class Oauth2BridgeServlet extends HttpServlet {
     private final SettingService settingService;
 
     @Inject
-    public Oauth2BridgeServlet(
-            @ComponentImport UserManager userManager,
-            HttpClientFactory httpClientFactory,
-            SettingService settingService
-    ) {
+    public Oauth2BridgeServlet(@ComponentImport UserManager userManager, HttpClientFactory httpClientFactory, SettingService settingService) {
         this.httpClientFactory = httpClientFactory;
         this.settingService = settingService;
         this.userManager = userManager;
@@ -52,87 +55,128 @@ public class Oauth2BridgeServlet extends HttpServlet {
 
     /**
      * 将 REST @GET 方法的逻辑迁移到 Servlet 的 doGet 方法中。
+     * http://localhost:2990/jira/plugins/servlet/oauth2bridge?client_id=ty&callback=http%3a%2f%2f192.168.0.130%3a8080%2fusermanager%2fcheck_token
      */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        log.info("Oauth2BridgeServlet doGet.");
-        // 1. 获取参数 (使用 Servlet API)
+        long start = System.currentTimeMillis();
+        log.info("[OAuth2Bridge] Incoming request. sessionId={}, remoteAddr={}, userAgent={}", req.getRequestedSessionId(), req.getRemoteAddr(), req.getHeader("User-Agent"));
+
         String clientId = req.getParameter("client_id");
         String callback = req.getParameter("callback");
 
-        // 设置响应内容类型，防止返回 HTML 格式的错误
+        log.debug("[OAuth2Bridge] Received params: client_id='{}', callback='{}'", clientId, callback);
+
         resp.setContentType("application/json");
 
-        // INFO: 记录关键的跳转行为
-        log.info("Request session_get via Servlet.");
-
-        // 2. 基础校验 (逻辑与原 REST 保持一致)
+        // 参数校验
         if (StringUtils.isBlank(clientId) || StringUtils.isBlank(callback)) {
+            log.warn("[OAuth2Bridge] Missing required param. client_id='{}', callback='{}'", clientId, callback);
             resp.setStatus(HttpStatus.SC_BAD_REQUEST);
             resp.getWriter().write("client_id or callback is blank");
             return;
         }
 
-        // 3. 校验是否匹配 (逻辑与原 REST 保持一致)
-        // 注意：这里的校验逻辑似乎是反的，但在转换中我们保持原样
+        // 解析 callback URL
+        URL url = UrlBuilder.createURL(callback);
+        String matchCallbackUrl = url.getProtocol() + "://" + url.getHost() + (url.getPort() > 0 ? ":" + url.getPort() : "") + url.getPath();
+
+        log.info("[OAuth2Bridge] Normalized callback URL: {}", matchCallbackUrl);
+
+        // 检查 clientId + callback 是否被允许
         ClientConfigPair allowClientConfigPair = null;
-        for (ClientConfigPair clientConfigPair : settingService.getSetting().getClientConfigPairs()) {
-            if (clientConfigPair.getClientId().equals(clientId) && clientConfigPair.getCallback().equals(callback)) {
-                allowClientConfigPair = clientConfigPair;
+        for (ClientConfigPair config : settingService.getSetting().getClientConfigPairs()) {
+            log.debug("[OAuth2Bridge] Checking allowed pair: clientId={}, callback={}", config.getClientId(), config.getCallback());
+            if (config.getClientId().equals(clientId) && config.getCallback().equals(matchCallbackUrl)) {
+                allowClientConfigPair = config;
                 break;
             }
         }
 
-        if (null == allowClientConfigPair) {
+        if (allowClientConfigPair == null) {
+            log.warn("[OAuth2Bridge] Reject request. No matching client config. clientId='{}', callback='{}'", clientId, matchCallbackUrl);
             resp.setStatus(HttpStatus.SC_UNAUTHORIZED);
-            resp.getWriter().write(MessageFormatter.format("client_id:{} callback: {} or callback is be not allowed", clientId, callback).getMessage());
+            resp.getWriter().write(MessageFormatter.format("client_id:{} callback:{} is not allowed", clientId, callback).getMessage());
             return;
         }
+
+        // 用户校验
         UserProfile remoteUser = userManager.getRemoteUser(req);
         if (remoteUser == null) {
-            resp.setStatus(HttpStatus.SC_UNAUTHORIZED);
-            resp.getWriter().write("not login");
+            String requestUrl = req.getRequestURL().toString();
+            String queryString = req.getQueryString();
+
+            if (queryString != null) {
+                requestUrl += "?" + queryString;
+            }
+            log.info("[OAuth2Bridge] User not logged in. Redirecting to login page. os_destination={}", requestUrl);
+            String redirectUrl = req.getContextPath() + "/login.jsp?os_destination=" + URLEncoder.encode(requestUrl, "UTF-8");
+            resp.sendRedirect(redirectUrl);
             return;
         }
-        // 4. 提取 Cookies
-        ObjectNode cookiesAsJson = extractCookiesAsJson(req);
 
-        // 5. 构造并发送内部 POST 请求
+        log.info("[OAuth2Bridge] Authenticated user: {}", remoteUser.getUsername());
+
+        // 提取 Cookies（不打印敏感）
+        ObjectNode cookiesAsJson = extractCookiesAsJson(req);
+        log.debug("[OAuth2Bridge] Extracted cookies JSON: {}", cookiesAsJson);
+
+        // 内部回调 POST
         StringEntity entity = new StringEntity(cookiesAsJson.toString(), StandardCharsets.UTF_8);
         HttpPost post = new HttpPost(callback);
+
+        log.info("[OAuth2Bridge] Forwarding cookies to callback via POST. callback={}", callback);
+
         post.setEntity(entity);
 
-        CloseableHttpClient httpClient = httpClientFactory.createClient(
-                settingService.getSetting().isInsecureSkipVerify(),
-                settingService.getSetting().getTrustCaCert()
-        );
+        CloseableHttpClient httpClient = httpClientFactory.createClient(settingService.getSetting().isInsecureSkipVerify(), settingService.getSetting().getTrustCaCert());
 
-        // 6. 处理内部请求响应
         try (CloseableHttpResponse response = httpClient.execute(post)) {
-            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-                String redirectUri = allowClientConfigPair.getRedirectUrl();
+            int status = response.getStatusLine().getStatusCode();
+            log.info("[OAuth2Bridge] Callback response status: {}", status);
+
+            String redirectUri = allowClientConfigPair.getRedirectUrl();
+
+            if (status == HttpStatus.SC_OK) {
                 if (response.getEntity() != null) {
                     String responseBody = EntityUtils.toString(response.getEntity());
+                    log.debug("[OAuth2Bridge] Callback response body: {}", responseBody);
 
-                    // 反序列化 JSON 到对象
-                    CallbackResponse callbackResponse = objectMapper.readValue(responseBody, CallbackResponse.class);
+                    try {
+                        CallbackResponse callbackResponse = objectMapper.readValue(responseBody, CallbackResponse.class);
 
-                    // 如果包含 redirectUri，进行重定向
-                    if (callbackResponse.getRedirectUri() != null && !callbackResponse.getRedirectUri().isEmpty()) {
-                        redirectUri = callbackResponse.getRedirectUri();
+                        if (StringUtils.isNotBlank(callbackResponse.getRedirectUri())) {
+                            redirectUri = callbackResponse.getRedirectUri();
+                            log.info("[OAuth2Bridge] Redirect URI overridden by callback: {}", redirectUri);
+                        }
+                    } catch (Exception e) {
+                        log.warn("[OAuth2Bridge] Failed to parse callback response JSON. Using default redirectUrl. body={}", responseBody);
                     }
                 }
-                resp.sendRedirect(redirectUri);
+
+                log.info("[OAuth2Bridge] Redirecting user to final redirectUri={}", redirectUri);
+                if (StringUtils.isBlank(redirectUri)) {
+
+                    log.warn("[OAuth2Bridge] redirectUri is empty. Using Jira system error page.");
+
+                    String message = "The OAuth2 callback did not return redirectUri for client_id="
+                            + clientId + ". and not config redirectUrl";
+                    throw new RedirectException(message);
+                } else {
+                    resp.sendRedirect(redirectUri);
+                }
             } else {
-                log.error("Request callback response status: {}", response.getStatusLine().getStatusCode());
-                resp.setStatus(response.getStatusLine().getStatusCode());
-                resp.getWriter().write(response.getEntity().toString());
+                String errorBody = response.getEntity() != null ? EntityUtils.toString(response.getEntity()) : "<empty>";
+                log.error("[OAuth2Bridge] Callback returned error. status={}, body={}", status, errorBody);
+                resp.setStatus(status);
+                resp.getWriter().write(errorBody);
             }
-        } catch (IOException e) {
-            log.error("Request callback failed: {}", e.getMessage(), e); // 记录完整的错误信息
-            resp.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().write("{\"error\": \"Internal callback request failed\"}");
+        } catch (IOException | RedirectException e) {
+            log.error("[OAuth2Bridge] Callback request failed: {}", e.getMessage(), e);
+            throw new RuntimeException(e);
         }
+
+        log.info("[OAuth2Bridge] Completed. cost={}ms", (System.currentTimeMillis() - start));
     }
 
     /**
@@ -142,11 +186,7 @@ public class Oauth2BridgeServlet extends HttpServlet {
         ObjectNode json = objectMapper.createObjectNode();
 
         Cookie[] cookies = request.getCookies();
-        String cookieStr = (cookies == null) ? "" :
-                Arrays.stream(cookies)
-                        .map(c -> c.getName() + "=" + c.getValue())
-                        .reduce((c1, c2) -> c1 + "; " + c2)
-                        .orElse("");
+        String cookieStr = (cookies == null) ? "" : Arrays.stream(cookies).map(c -> c.getName() + "=" + c.getValue()).reduce((c1, c2) -> c1 + "; " + c2).orElse("");
 
         log.debug("Combined cookie string: {}", cookieStr);
         json.put("cookie", cookieStr);

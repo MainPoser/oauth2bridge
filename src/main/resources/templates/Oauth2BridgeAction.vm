@@ -75,10 +75,10 @@
                                 #foreach($config in $list)
                                     <tr>
                                         <td>
-                                            <input class="text full-width-field" type="text" name="clientIds" placeholder="$i18n.getText('oauth2bridge.clientId.placeholder')" value="$!config.getClientId()"/>
+                                            <input required class="text full-width-field" type="text" name="clientIds" placeholder="$i18n.getText('oauth2bridge.clientId.placeholder')" value="$!config.getClientId()"/>
                                         </td>
                                         <td>
-                                            <input class="text full-width-field" type="text" name="callbacks" placeholder="$i18n.getText('oauth2bridge.callback.placeholder')" value="$!config.getCallback()"/>
+                                            <input required class="text full-width-field" type="text" name="callbacks" placeholder="$i18n.getText('oauth2bridge.callback.placeholder')" value="$!config.getCallback()"/>
                                         </td>
                                         <td>
                                             <input class="text full-width-field" type="text" name="redirectUrls" placeholder="$i18n.getText('oauth2bridge.redirectUrl.placeholder')" value="$!config.getRedirectUrl()"/>
