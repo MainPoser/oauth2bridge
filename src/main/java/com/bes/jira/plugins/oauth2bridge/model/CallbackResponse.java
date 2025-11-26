@@ -1,13 +1,16 @@
 package com.bes.jira.plugins.oauth2bridge.model;
 
-public class CallbackResponse {
-    private String redirectUri;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
-    public String getRedirectUri() {
-        return redirectUri;
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class CallbackResponse {
+    private String redirectUrl;
+
+    public String getRedirectUrl() {
+        return redirectUrl;
     }
 
-    public void setRedirectUri(String redirectUri) {
-        this.redirectUri = redirectUri;
+    public void setRedirectUrl(String redirectUrl) {
+        this.redirectUrl = redirectUrl;
     }
 }

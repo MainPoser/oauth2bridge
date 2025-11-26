@@ -2,8 +2,6 @@ package com.bes.jira.plugins.oauth2bridge.servlet;
 
 import com.atlassian.jira.util.UrlBuilder;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
-import com.atlassian.sal.api.ApplicationProperties;
-import com.atlassian.sal.api.UrlMode;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.sal.api.user.UserProfile;
 import com.bes.jira.plugins.oauth2bridge.http.factory.HttpClientFactory;
@@ -16,6 +14,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.RedirectException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
@@ -60,14 +59,13 @@ public class Oauth2BridgeServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         long start = System.currentTimeMillis();
-        log.info("[OAuth2Bridge] Incoming request. sessionId={}, remoteAddr={}, userAgent={}", req.getRequestedSessionId(), req.getRemoteAddr(), req.getHeader("User-Agent"));
 
         String clientId = req.getParameter("client_id");
         String callback = req.getParameter("callback");
 
         log.debug("[OAuth2Bridge] Received params: client_id='{}', callback='{}'", clientId, callback);
 
-        resp.setContentType("application/json");
+        resp.setContentType(ContentType.APPLICATION_JSON.toString());
 
         // 参数校验
         if (StringUtils.isBlank(clientId) || StringUtils.isBlank(callback)) {
@@ -110,7 +108,7 @@ public class Oauth2BridgeServlet extends HttpServlet {
                 requestUrl += "?" + queryString;
             }
             log.info("[OAuth2Bridge] User not logged in. Redirecting to login page. os_destination={}", requestUrl);
-            String redirectUrl = req.getContextPath() + "/login.jsp?os_destination=" + URLEncoder.encode(requestUrl, "UTF-8");
+            String redirectUrl = req.getContextPath() + "/login.jsp?os_destination=" + URLEncoder.encode(requestUrl, StandardCharsets.UTF_8.toString());
             resp.sendRedirect(redirectUrl);
             return;
         }
@@ -122,12 +120,13 @@ public class Oauth2BridgeServlet extends HttpServlet {
         log.debug("[OAuth2Bridge] Extracted cookies JSON: {}", cookiesAsJson);
 
         // 内部回调 POST
-        StringEntity entity = new StringEntity(cookiesAsJson.toString(), StandardCharsets.UTF_8);
+        StringEntity entity = new StringEntity(cookiesAsJson.toString(), ContentType.APPLICATION_JSON);
         HttpPost post = new HttpPost(callback);
 
         log.info("[OAuth2Bridge] Forwarding cookies to callback via POST. callback={}", callback);
 
         post.setEntity(entity);
+
 
         CloseableHttpClient httpClient = httpClientFactory.createClient(settingService.getSetting().isInsecureSkipVerify(), settingService.getSetting().getTrustCaCert());
 
@@ -145,8 +144,8 @@ public class Oauth2BridgeServlet extends HttpServlet {
                     try {
                         CallbackResponse callbackResponse = objectMapper.readValue(responseBody, CallbackResponse.class);
 
-                        if (StringUtils.isNotBlank(callbackResponse.getRedirectUri())) {
-                            redirectUri = callbackResponse.getRedirectUri();
+                        if (StringUtils.isNotBlank(callbackResponse.getRedirectUrl())) {
+                            redirectUri = callbackResponse.getRedirectUrl();
                             log.info("[OAuth2Bridge] Redirect URI overridden by callback: {}", redirectUri);
                         }
                     } catch (Exception e) {
