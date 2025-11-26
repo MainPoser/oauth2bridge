@@ -167,11 +167,9 @@ public class Oauth2BridgeServlet extends HttpServlet {
                 }
             } else {
                 String errorBody = response.getEntity() != null ? EntityUtils.toString(response.getEntity()) : "<empty>";
-                log.error("[OAuth2Bridge] Callback returned error. status={}, body={}", status, errorBody);
-                resp.setStatus(status);
-                resp.getWriter().write(errorBody);
+                throw new HttpException(MessageFormatter.format("[OAuth2Bridge] Callback returned error. status={}, body={}", status, errorBody).getMessage());
             }
-        } catch (IOException | RedirectException e) {
+        } catch (IOException | HttpException e) {
             log.error("[OAuth2Bridge] Callback request failed: {}", e.getMessage(), e);
             throw new RuntimeException(e);
         }
