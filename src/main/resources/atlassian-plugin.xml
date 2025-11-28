@@ -9,43 +9,39 @@
         <param name="plugin-logo">images/pluginLogo.png</param>
     </plugin-info>
     <!-- add our i18n resource -->
-    <resource type="i18n" name="i18n" location="oauth2bridge"/>
+    <resource type="i18n" name="i18n" location="authbridge"/>
     <!-- add our web resources -->
-    <web-resource key="oauth2bridge-resources" name="oauth2bridge Web Resources">
+    <web-resource key="authbridge-resources" name="AuthBridge Web Resources">
         <dependency>com.atlassian.auiplugin:ajs</dependency>
-        <resource type="download" name="oauth2bridge.css" location="/css/oauth2bridge.css"/>
-        <resource type="download" name="oauth2bridge.js" location="/js/oauth2bridge.js"/>
+        <resource type="download" name="authbridge.css" location="/css/authbridge.css"/>
+        <resource type="download" name="authbridge.js" location="/js/authbridge.js"/>
         <resource type="download" name="images/" location="/images"/>
-        <context>com.bes.jira.plugins.oauth2bridge</context>
+        <context>com.bes.jira.plugins.authbridge</context>
     </web-resource>
-    <web-section key="oauth2-bridge-section"
-                 name="oauth2bridge Section"
+    <web-section key="auth-bridge-section"
+                 name="AuthBridge Section"
                  location="admin_plugins_menu"
                  weight="110">
-        <label key="oauth2-bridge-section.label"/>
+        <label key="auth-bridge-section.label"/>
     </web-section>
-    <web-item key="oauth2-bridge-web-item"
-              name="oauth2bridge WebItem"
-              section="admin_plugins_menu/oauth2-bridge-section"
+    <web-item key="auth-bridge-web-item"
+              name="AuthBridge WebItem"
+              section="admin_plugins_menu/auth-bridge-section"
               weight="10">
-        <description>Link to oauth2-bridge page.</description>
-        <label key="oauth2-bridge-web-item.label"/>
-        <link linkId="oauth2-bridge-web-item-link">/secure/oauth2bridge.jspa</link>
+        <description>Link to auth-bridge page.</description>
+        <label key="auth-bridge-web-item.label"/>
+        <link linkId="auth-bridge-web-item-link">/secure/authbridge.jspa</link>
     </web-item>
-    <webwork1 key="oauth2-bridge-webwork" name="oauth2bridge WebWork" roles-required="sysadmin">
+    <webwork1 key="auth-bridge-webwork" name="AuthBridge WebWork" roles-required="sysadmin">
         <actions>
-            <action name="com.bes.jira.plugins.oauth2bridge.action.Oauth2BridgeAction"
-                    alias="oauth2bridge">
-                <view name="input">/templates/Oauth2BridgeAction.vm</view>
+            <action name="com.bes.jira.plugins.authbridge.action.AuthBridgeAction"
+                    alias="authbridge">
+                <view name="input">/templates/AuthBridgeAction.vm</view>
             </action>
         </actions>
     </webwork1>
-    <servlet name="Oauth2Bridge Servlet" key="oauth2bridge-servlet" class="com.bes.jira.plugins.oauth2bridge.servlet.Oauth2BridgeServlet">
+    <servlet name="AuthBridge Servlet" key="authbridge-servlet" class="com.bes.jira.plugins.authbridge.servlet.AuthBridgeServlet">
         <description>Provide servlet.</description>
-        <url-pattern>/oauth2bridge</url-pattern>
-        <init-param>
-            <param-name>defaultName</param-name>
-            <param-value>Australia</param-value>
-        </init-param>
+        <url-pattern>/authbridge</url-pattern>
     </servlet>
 </atlassian-plugin>

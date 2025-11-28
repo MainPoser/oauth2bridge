@@ -1,4 +1,4 @@
-package com.bes.jira.plugins.oauth2bridge.model;
+package com.bes.jira.plugins.authbridge.model;
 
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
@@ -6,15 +6,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Oauth2BridgeSetting {
+public class AuthBridgeSetting {
     private List<ClientConfigPair> clientConfigPairs = new ArrayList<>();
     private boolean insecureSkipVerify;
     private String trustCaCert;
 
-    public Oauth2BridgeSetting() {
+    public AuthBridgeSetting() {
     }
 
-    public Oauth2BridgeSetting(List<ClientConfigPair> clientConfigPairs, boolean insecureSkipVerify, String trustCaCert) {
+    public AuthBridgeSetting(List<ClientConfigPair> clientConfigPairs, boolean insecureSkipVerify, String trustCaCert) {
         this.clientConfigPairs = clientConfigPairs;
         this.insecureSkipVerify = insecureSkipVerify;
         this.trustCaCert = trustCaCert;
@@ -46,7 +46,7 @@ public class Oauth2BridgeSetting {
 
     @Override
     public String toString() {
-        return "Oauth2BridgeSetting{" +
+        return "AuthBridgeSetting{" +
                 ", insecureSkipVerify=" + insecureSkipVerify +
                 ", trustCaCert='" + trustCaCert + '\'' +
                 '}';

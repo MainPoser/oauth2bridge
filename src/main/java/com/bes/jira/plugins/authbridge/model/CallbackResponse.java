@@ -1,4 +1,4 @@
-package com.bes.jira.plugins.oauth2bridge.model;
+package com.bes.jira.plugins.authbridge.model;
 
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 

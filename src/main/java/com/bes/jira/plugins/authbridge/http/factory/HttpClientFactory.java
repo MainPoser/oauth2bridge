@@ -1,4 +1,4 @@
-package com.bes.jira.plugins.oauth2bridge.http.factory;
+package com.bes.jira.plugins.authbridge.http.factory;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;

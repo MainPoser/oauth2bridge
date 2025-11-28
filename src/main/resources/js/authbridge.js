@@ -7,25 +7,25 @@ AJS.toInit(function () {
                 <td>
                     <input required class="text full-width-field" type="text"
                            name="clientIds"
-                           placeholder="${window.OAuth2BridgeI18n.clientIdPlaceholder}"
+                           placeholder="${window.AuthBridgeI18n.clientIdPlaceholder}"
                            value=""/>
                 </td>
                 <td>
                     <input required class="text full-width-field" type="text"
                            name="callbacks"
-                           placeholder="${window.OAuth2BridgeI18n.callbackPlaceholder}"
+                           placeholder="${window.AuthBridgeI18n.callbackPlaceholder}"
                            value=""/>
                 </td>
                 <td>
                     <input class="text full-width-field" type="text"
                            name="redirectUrls"
-                           placeholder="${window.OAuth2BridgeI18n.redirectUrlPlaceholder}"
+                           placeholder="${window.AuthBridgeI18n.redirectUrlPlaceholder}"
                            value=""/>
                 </td>
                 <td>
                     <button type="button"
                             class="aui-button aui-button-link delete-row-btn">
-                        ${window.OAuth2BridgeI18n.deleteButton}
+                        ${window.AuthBridgeI18n.deleteButton}
                     </button>
                 </td>
             </tr>
@@ -39,7 +39,7 @@ AJS.toInit(function () {
 
     // 删除行
     $tableBody.on('click', '.delete-row-btn', function() {
-        if (confirm(window.OAuth2BridgeI18n.deleteConfirm)) {
+        if (confirm(window.AuthBridgeI18n.deleteConfirm)) {
             AJS.$(this).closest('tr').remove();
         }
     });

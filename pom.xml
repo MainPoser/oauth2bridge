@@ -3,14 +3,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.bes.jira.plugins</groupId>
-    <artifactId>oauth2bridge</artifactId>
+    <artifactId>authbridge</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <organization>
         <name>BES Company</name>
         <url>https://www.bessystem.com/</url>
     </organization>
-    <name>Oauth2Bridge</name>
-    <description>This is the com.bes.jira.plugins:oauth2bridge plugin for Atlassian JIRA.</description>
+    <name>AuthBridge</name>
+    <description>This is the com.bes.jira.plugins:authbridge plugin for Atlassian JIRA.</description>
     <packaging>atlassian-plugin</packaging>
     <dependencies>
         <dependency>
@@ -67,7 +67,7 @@
                     <instructions>
                         <Atlassian-Plugin-Key>${atlassian.plugin.key}</Atlassian-Plugin-Key>
                         <!-- Add package to export here -->
-<!--                        <Export-Package>com.bes.jira.plugins.oauth2bridge.api,</Export-Package>-->
+<!--                        <Export-Package>com.bes.jira.plugins.authbridge.api,</Export-Package>-->
                         <!-- Add package import here -->
                         <Import-Package>org.springframework.osgi.*;resolution:="optional", org.eclipse.gemini.blueprint.*;resolution:="optional", *</Import-Package>
                         <!-- Ensure plugin is spring powered -->

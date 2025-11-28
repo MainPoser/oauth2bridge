@@ -1,19 +1,19 @@
 <html>
 <head>
-    <title>$i18n.getText("oauth2bridge.title")</title>
+    <title>$i18n.getText("authbridge.title")</title>
     <script type="text/javascript">
-        window.OAuth2BridgeI18n = {
-            clientIdPlaceholder: "$i18n.getText('oauth2bridge.clientId.placeholder')",
-            callbackPlaceholder: "$i18n.getText('oauth2bridge.callback.placeholder')",
-            redirectUrlPlaceholder: "$i18n.getText('oauth2bridge.redirectUrl.placeholder')",
-            deleteButton: "$i18n.getText('oauth2bridge.clients.delete.button')",
-            deleteConfirm: "$i18n.getText('oauth2bridge.clients.delete.confirm')"
+        window.AuthBridgeI18n = {
+            clientIdPlaceholder: "$i18n.getText('authbridge.clientId.placeholder')",
+            callbackPlaceholder: "$i18n.getText('authbridge.callback.placeholder')",
+            redirectUrlPlaceholder: "$i18n.getText('authbridge.redirectUrl.placeholder')",
+            deleteButton: "$i18n.getText('authbridge.clients.delete.button')",
+            deleteConfirm: "$i18n.getText('authbridge.clients.delete.confirm')"
         };
     </script>
-    $webResourceManager.requireResourcesForContext("com.bes.jira.plugins.oauth2bridge")
+    $webResourceManager.requireResourcesForContext("com.bes.jira.plugins.authbridge")
     <meta name="decorator" content="atl.admin"/>
-    <meta name="admin.active.section" content="admin_plugins_menu/oauth2-bridge-section"/>
-    <meta name="admin.active.tab" content="oauth2-bridge-setting-item-link"/>
+    <meta name="admin.active.section" content="admin_plugins_menu/auth-bridge-section"/>
+    <meta name="admin.active.tab" content="auth-bridge-setting-item-link"/>
 </head>
 <body>
 
@@ -21,14 +21,14 @@
     <div class="aui-page-panel-content">
 
         <div class="aui-page-header-main">
-            <h1>$i18n.getText("oauth2bridge.title")</h1>
+            <h1>$i18n.getText("authbridge.title")</h1>
         </div>
 
         #if($action.hasAnyErrors())
             #if($action.getErrors().size() > 0 || $action.getErrorMessages().size() > 0)
                 <div class="aui-message aui-message-error">
                     <p class="title">
-                        <strong>$i18n.getText("oauth2bridge.save.error.title")</strong>
+                        <strong>$i18n.getText("authbridge.save.error.title")</strong>
                     </p>
                     <ul>
                         #foreach($errorKey in $action.getErrors().keySet())
@@ -58,15 +58,15 @@
         <form class="aui" method="post">
             <input type="hidden" name="command" value="execute"/>
             <fieldset class="group">
-                <legend><span>$i18n.getText("oauth2bridge.fieldset.clients"):</span></legend>
+                <legend><span>$i18n.getText("authbridge.fieldset.clients"):</span></legend>
                 <div class="aui-field-group">
                     <table id="clientConfigTable" class="aui">
                         <thead>
                             <tr>
-                                <th width="40%">$i18n.getText("oauth2bridge.clientId")</th>
-                                <th width="40%">$i18n.getText("oauth2bridge.callback")</th>
-                                <th width="40%">$i18n.getText("oauth2bridge.redirectUrl")</th>
-                                <th width="20%">$i18n.getText("oauth2bridge.operation")</th>
+                                <th width="40%">$i18n.getText("authbridge.clientId")</th>
+                                <th width="40%">$i18n.getText("authbridge.callback")</th>
+                                <th width="40%">$i18n.getText("authbridge.redirectUrl")</th>
+                                <th width="20%">$i18n.getText("authbridge.operation")</th>
                             </tr>
                         </thead>
                         <tbody id="clientConfigTableBody">
@@ -75,16 +75,16 @@
                                 #foreach($config in $list)
                                     <tr>
                                         <td>
-                                            <input required class="text full-width-field" type="text" name="clientIds" placeholder="$i18n.getText('oauth2bridge.clientId.placeholder')" value="$!config.getClientId()"/>
+                                            <input required class="text full-width-field" type="text" name="clientIds" placeholder="$i18n.getText('authbridge.clientId.placeholder')" value="$!config.getClientId()"/>
                                         </td>
                                         <td>
-                                            <input required class="text full-width-field" type="text" name="callbacks" placeholder="$i18n.getText('oauth2bridge.callback.placeholder')" value="$!config.getCallback()"/>
+                                            <input required class="text full-width-field" type="text" name="callbacks" placeholder="$i18n.getText('authbridge.callback.placeholder')" value="$!config.getCallback()"/>
                                         </td>
                                         <td>
-                                            <input class="text full-width-field" type="text" name="redirectUrls" placeholder="$i18n.getText('oauth2bridge.redirectUrl.placeholder')" value="$!config.getRedirectUrl()"/>
+                                            <input class="text full-width-field" type="text" name="redirectUrls" placeholder="$i18n.getText('authbridge.redirectUrl.placeholder')" value="$!config.getRedirectUrl()"/>
                                         </td>
                                         <td>
-                                            <button type="button" class="aui-button aui-button-link delete-row-btn">$i18n.getText("oauth2bridge.clients.delete.button")</button>
+                                            <button type="button" class="aui-button aui-button-link delete-row-btn">$i18n.getText("authbridge.clients.delete.button")</button>
                                         </td>
                                     </tr>
                                 #end
@@ -93,41 +93,41 @@
                     </table>
                 </div>
                 <div class="aui-buttons">
-                    <button type="button" class="aui-button" id="addRowBtn">$i18n.getText("oauth2bridge.clients.addRow.button")</button>
+                    <button type="button" class="aui-button" id="addRowBtn">$i18n.getText("authbridge.clients.addRow.button")</button>
                 </div>
 
             </fieldset>
 
             <fieldset class="group">
-                <legend><span>$i18n.getText("oauth2bridge.fieldset.tls"):</span></legend>
+                <legend><span>$i18n.getText("authbridge.fieldset.tls"):</span></legend>
 
                 <div class="aui-field-group">
 
-                    <label for="insecureSkipVerifyId" class="aui-label" title="$i18n.getText('oauth2bridge.insecureSkipVerify.description')">
-                        <strong>$i18n.getText("oauth2bridge.insecureSkipVerify"):</strong>
+                    <label for="insecureSkipVerifyId" class="aui-label" title="$i18n.getText('authbridge.insecureSkipVerify.description')">
+                        <strong>$i18n.getText("authbridge.insecureSkipVerify"):</strong>
                     </label>
 
                     <select class="select" id="insecureSkipVerifyId" name="insecureSkipVerify">
 
                         <option value="false" #if(!$action.insecureSkipVerify) selected #end>
-                            $i18n.getText("oauth2bridge.option.no") </option>
+                            $i18n.getText("authbridge.option.no") </option>
 
                         <option value="true" #if($action.insecureSkipVerify) selected #end>
-                            $i18n.getText("oauth2bridge.option.yes") </option>
+                            $i18n.getText("authbridge.option.yes") </option>
 
                     </select>
                 </div>
 
                 <div class="aui-field-group">
-                    <label for="trustCaCertId" class="aui-label" title="$i18n.getText('oauth2bridge.trustCaCert.description')">
-                        <strong>$i18n.getText("oauth2bridge.trustCaCert"):</strong>
+                    <label for="trustCaCertId" class="aui-label" title="$i18n.getText('authbridge.trustCaCert.description')">
+                        <strong>$i18n.getText("authbridge.trustCaCert"):</strong>
                     </label>
-                    <textarea class="textarea full-width-field" id="trustCaCertId" name="trustCaCert" rows="10" placeholder="$i18n.getText('oauth2bridge.trustCaCert.placeholder')">$!action.trustCaCert</textarea>
+                    <textarea class="textarea full-width-field" id="trustCaCertId" name="trustCaCert" rows="10" placeholder="$i18n.getText('authbridge.trustCaCert.placeholder')">$!action.trustCaCert</textarea>
                 </div>
             </fieldset>
 
             <div class="aui-buttons">
-                <input type="submit" class="aui-button aui-button-primary" value="$i18n.getText('oauth2bridge.save.button')"/>
+                <input type="submit" class="aui-button aui-button-primary" value="$i18n.getText('authbridge.save.button')"/>
             </div>
         </form>
 

@@ -1,9 +1,9 @@
-package com.bes.jira.plugins.oauth2bridge.action;
+package com.bes.jira.plugins.authbridge.action;
 
 import com.atlassian.jira.web.action.JiraWebActionSupport;
-import com.bes.jira.plugins.oauth2bridge.model.ClientConfigPair;
-import com.bes.jira.plugins.oauth2bridge.model.Oauth2BridgeSetting;
-import com.bes.jira.plugins.oauth2bridge.service.SettingService;
+import com.bes.jira.plugins.authbridge.model.ClientConfigPair;
+import com.bes.jira.plugins.authbridge.model.AuthBridgeSetting;
+import com.bes.jira.plugins.authbridge.service.SettingService;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,10 +17,10 @@ import java.util.Collections;
 import java.util.List;
 
 @Named
-public class Oauth2BridgeAction extends JiraWebActionSupport {
+public class AuthBridgeAction extends JiraWebActionSupport {
 
 
-    private static final Logger log = LoggerFactory.getLogger(Oauth2BridgeAction.class);
+    private static final Logger log = LoggerFactory.getLogger(AuthBridgeAction.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final SettingService settingService;
@@ -35,15 +35,15 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
     private String[] redirectUrls;
 
     @Inject
-    public Oauth2BridgeAction(SettingService settingService) {
+    public AuthBridgeAction(SettingService settingService) {
         this.settingService = settingService;
     }
 
     @Override
     public String doDefault() {
-        log.info("User is accessing OAuth2 Bridge configuration page (doDefault).");
+        log.info("User is accessing Auth Bridge configuration page (doDefault).");
 
-        Oauth2BridgeSetting setting = settingService.getSetting();
+        AuthBridgeSetting setting = settingService.getSetting();
         if (setting != null) {
             insecureSkipVerify = setting.isInsecureSkipVerify();
             trustCaCert = setting.getTrustCaCert();
@@ -57,7 +57,7 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
                 log.info("Loaded clientConfigPair - clientId: '{}', callback: '{}'", c.getClientId(), c.getCallback());
             }
         } else {
-            log.info("No existing OAuth2 Bridge settings found, initializing defaults.");
+            log.info("No existing Auth Bridge settings found, initializing defaults.");
         }
 
         return INPUT;
@@ -72,7 +72,7 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
             return this.doDefault();
         }
 
-        log.info("Starting OAuth2 Bridge settings update...");
+        log.info("Starting Auth Bridge settings update...");
 
         if (clientIds != null) {
             log.info("Received clientIds: {}", Arrays.toString(clientIds));
@@ -107,20 +107,20 @@ public class Oauth2BridgeAction extends JiraWebActionSupport {
                     callbacks != null ? callbacks.length : "null");
         }
 
-        Oauth2BridgeSetting oauth2BridgeSetting = new Oauth2BridgeSetting(newClientConfigPairs, insecureSkipVerify, trustCaCert);
-        log.info("Prepared Oauth2BridgeSetting for saving: clientConfigPairs size={}, insecureSkipVerify={}, trustCaCert present={}",
+        AuthBridgeSetting authBridgeSetting = new AuthBridgeSetting(newClientConfigPairs, insecureSkipVerify, trustCaCert);
+        log.info("Prepared AuthBridgeSetting for saving: clientConfigPairs size={}, insecureSkipVerify={}, trustCaCert present={}",
                 newClientConfigPairs.size(), insecureSkipVerify, trustCaCert != null && !trustCaCert.isEmpty());
 
         try {
-            settingService.updateSetting(oauth2BridgeSetting);
-            log.info("OAuth2 Bridge settings updated successfully.");
+            settingService.updateSetting(authBridgeSetting);
+            log.info("Auth Bridge settings updated successfully.");
         } catch (Exception e) {
-            log.error("Failed to update OAuth2 Bridge settings.", e);
+            log.error("Failed to update Auth Bridge settings.", e);
             addErrorMessage("Failed to save settings: " + e.getMessage());
             return ERROR;
         }
 
-        return getRedirect("oauth2bridge.jspa");
+        return getRedirect("authbridge.jspa");
     }
 
     // Getters / Setters

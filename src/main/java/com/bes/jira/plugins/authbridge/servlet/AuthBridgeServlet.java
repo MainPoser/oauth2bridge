@@ -1,13 +1,13 @@
-package com.bes.jira.plugins.oauth2bridge.servlet;
+package com.bes.jira.plugins.authbridge.servlet;
 
 import com.atlassian.jira.util.UrlBuilder;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.sal.api.user.UserProfile;
-import com.bes.jira.plugins.oauth2bridge.http.factory.HttpClientFactory;
-import com.bes.jira.plugins.oauth2bridge.model.CallbackResponse;
-import com.bes.jira.plugins.oauth2bridge.model.ClientConfigPair;
-import com.bes.jira.plugins.oauth2bridge.service.SettingService;
+import com.bes.jira.plugins.authbridge.http.factory.HttpClientFactory;
+import com.bes.jira.plugins.authbridge.model.CallbackResponse;
+import com.bes.jira.plugins.authbridge.model.ClientConfigPair;
+import com.bes.jira.plugins.authbridge.service.SettingService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpException;
 import org.apache.http.HttpStatus;
@@ -38,15 +38,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 @Named
-public class Oauth2BridgeServlet extends HttpServlet {
-    private static final Logger log = LoggerFactory.getLogger(Oauth2BridgeServlet.class);
+public class AuthBridgeServlet extends HttpServlet {
+    private static final Logger log = LoggerFactory.getLogger(AuthBridgeServlet.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final UserManager userManager;
     private final HttpClientFactory httpClientFactory;
     private final SettingService settingService;
 
     @Inject
-    public Oauth2BridgeServlet(@ComponentImport UserManager userManager, HttpClientFactory httpClientFactory, SettingService settingService) {
+    public AuthBridgeServlet(@ComponentImport UserManager userManager, HttpClientFactory httpClientFactory, SettingService settingService) {
         this.httpClientFactory = httpClientFactory;
         this.settingService = settingService;
         this.userManager = userManager;
@@ -54,7 +54,7 @@ public class Oauth2BridgeServlet extends HttpServlet {
 
     /**
      * 将 REST @GET 方法的逻辑迁移到 Servlet 的 doGet 方法中。
-     * http://localhost:2990/jira/plugins/servlet/oauth2bridge?client_id=ty&callback=http%3a%2f%2f192.168.0.130%3a8080%2fusermanager%2fcheck_token
+     * http://localhost:2990/jira/plugins/servlet/authbridge?client_id=ty&callback=http%3a%2f%2f192.168.0.130%3a8080%2fusermanager%2fcheck_token
      */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -63,13 +63,13 @@ public class Oauth2BridgeServlet extends HttpServlet {
         String clientId = req.getParameter("client_id");
         String callback = req.getParameter("callback");
 
-        log.debug("[OAuth2Bridge] Received params: client_id='{}', callback='{}'", clientId, callback);
+        log.debug("[AuthBridge] Received params: client_id='{}', callback='{}'", clientId, callback);
 
         resp.setContentType(ContentType.APPLICATION_JSON.toString());
 
         // 参数校验
         if (StringUtils.isBlank(clientId) || StringUtils.isBlank(callback)) {
-            log.warn("[OAuth2Bridge] Missing required param. client_id='{}', callback='{}'", clientId, callback);
+            log.warn("[AuthBridge] Missing required param. client_id='{}', callback='{}'", clientId, callback);
             resp.setStatus(HttpStatus.SC_BAD_REQUEST);
             resp.getWriter().write("client_id or callback is blank");
             return;
@@ -79,12 +79,12 @@ public class Oauth2BridgeServlet extends HttpServlet {
         URL url = UrlBuilder.createURL(callback);
         String matchCallbackUrl = url.getProtocol() + "://" + url.getHost() + (url.getPort() > 0 ? ":" + url.getPort() : "") + url.getPath();
 
-        log.info("[OAuth2Bridge] Normalized callback URL: {}", matchCallbackUrl);
+        log.info("[AuthBridge] Normalized callback URL: {}", matchCallbackUrl);
 
         // 检查 clientId + callback 是否被允许
         ClientConfigPair allowClientConfigPair = null;
         for (ClientConfigPair config : settingService.getSetting().getClientConfigPairs()) {
-            log.debug("[OAuth2Bridge] Checking allowed pair: clientId={}, callback={}", config.getClientId(), config.getCallback());
+            log.debug("[AuthBridge] Checking allowed pair: clientId={}, callback={}", config.getClientId(), config.getCallback());
             if (config.getClientId().equals(clientId) && config.getCallback().equals(matchCallbackUrl)) {
                 allowClientConfigPair = config;
                 break;
@@ -92,7 +92,7 @@ public class Oauth2BridgeServlet extends HttpServlet {
         }
 
         if (allowClientConfigPair == null) {
-            log.warn("[OAuth2Bridge] Reject request. No matching client config. clientId='{}', callback='{}'", clientId, matchCallbackUrl);
+            log.warn("[AuthBridge] Reject request. No matching client config. clientId='{}', callback='{}'", clientId, matchCallbackUrl);
             resp.setStatus(HttpStatus.SC_UNAUTHORIZED);
             resp.getWriter().write(MessageFormatter.format("client_id:{} callback:{} is not allowed", clientId, callback).getMessage());
             return;
@@ -107,23 +107,23 @@ public class Oauth2BridgeServlet extends HttpServlet {
             if (queryString != null) {
                 requestUrl += "?" + queryString;
             }
-            log.info("[OAuth2Bridge] User not logged in. Redirecting to login page. os_destination={}", requestUrl);
+            log.info("[AuthBridge] User not logged in. Redirecting to login page. os_destination={}", requestUrl);
             String redirectUrl = req.getContextPath() + "/login.jsp?os_destination=" + URLEncoder.encode(requestUrl, StandardCharsets.UTF_8.toString());
             resp.sendRedirect(redirectUrl);
             return;
         }
 
-        log.info("[OAuth2Bridge] Authenticated user: {}", remoteUser.getUsername());
+        log.info("[AuthBridge] Authenticated user: {}", remoteUser.getUsername());
 
         // 提取 Cookies（不打印敏感）
         ObjectNode cookiesAsJson = extractCookiesAsJson(req);
-        log.debug("[OAuth2Bridge] Extracted cookies JSON: {}", cookiesAsJson);
+        log.debug("[AuthBridge] Extracted cookies JSON: {}", cookiesAsJson);
 
         // 内部回调 POST
         StringEntity entity = new StringEntity(cookiesAsJson.toString(), ContentType.APPLICATION_JSON);
         HttpPost post = new HttpPost(callback);
 
-        log.info("[OAuth2Bridge] Forwarding cookies to callback via POST. callback={}", callback);
+        log.info("[AuthBridge] Forwarding cookies to callback via POST. callback={}", callback);
 
         post.setEntity(entity);
 
@@ -132,33 +132,33 @@ public class Oauth2BridgeServlet extends HttpServlet {
 
         try (CloseableHttpResponse response = httpClient.execute(post)) {
             int status = response.getStatusLine().getStatusCode();
-            log.info("[OAuth2Bridge] Callback response status: {}", status);
+            log.info("[AuthBridge] Callback response status: {}", status);
 
             String redirectUri = allowClientConfigPair.getRedirectUrl();
 
             if (status == HttpStatus.SC_OK) {
                 if (response.getEntity() != null) {
                     String responseBody = EntityUtils.toString(response.getEntity());
-                    log.debug("[OAuth2Bridge] Callback response body: {}", responseBody);
+                    log.debug("[AuthBridge] Callback response body: {}", responseBody);
 
                     try {
                         CallbackResponse callbackResponse = objectMapper.readValue(responseBody, CallbackResponse.class);
 
                         if (StringUtils.isNotBlank(callbackResponse.getRedirectUrl())) {
                             redirectUri = callbackResponse.getRedirectUrl();
-                            log.info("[OAuth2Bridge] Redirect URI overridden by callback: {}", redirectUri);
+                            log.info("[AuthBridge] Redirect URI overridden by callback: {}", redirectUri);
                         }
                     } catch (Exception e) {
-                        log.warn("[OAuth2Bridge] Failed to parse callback response JSON. Using default redirectUrl. body={}", responseBody);
+                        log.warn("[AuthBridge] Failed to parse callback response JSON. Using default redirectUrl. body={}", responseBody);
                     }
                 }
 
-                log.info("[OAuth2Bridge] Redirecting user to final redirectUri={}", redirectUri);
+                log.info("[AuthBridge] Redirecting user to final redirectUri={}", redirectUri);
                 if (StringUtils.isBlank(redirectUri)) {
 
-                    log.warn("[OAuth2Bridge] redirectUri is empty. Using Jira system error page.");
+                    log.warn("[AuthBridge] redirectUri is empty. Using Jira system error page.");
 
-                    String message = "The OAuth2 callback did not return redirectUri for client_id="
+                    String message = "The Auth callback did not return redirectUri for client_id="
                             + clientId + ". and not config redirectUrl";
                     throw new RedirectException(message);
                 } else {
@@ -166,14 +166,14 @@ public class Oauth2BridgeServlet extends HttpServlet {
                 }
             } else {
                 String errorBody = response.getEntity() != null ? EntityUtils.toString(response.getEntity()) : "<empty>";
-                throw new HttpException(MessageFormatter.format("[OAuth2Bridge] Callback returned error. status={}, body={}", status, errorBody).getMessage());
+                throw new HttpException(MessageFormatter.format("[AuthBridge] Callback returned error. status={}, body={}", status, errorBody).getMessage());
             }
         } catch (IOException | HttpException e) {
-            log.error("[OAuth2Bridge] Callback request failed: {}", e.getMessage(), e);
+            log.error("[AuthBridge] Callback request failed: {}", e.getMessage(), e);
             throw new RuntimeException(e);
         }
 
-        log.info("[OAuth2Bridge] Completed. cost={}ms", (System.currentTimeMillis() - start));
+        log.info("[AuthBridge] Completed. cost={}ms", (System.currentTimeMillis() - start));
     }
 
     /**
